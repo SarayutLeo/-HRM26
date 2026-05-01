@@ -181,29 +181,32 @@ function dsave(){try{localStorage.setItem('hrm_depts',JSON.stringify(S.depts))}c
 async function apiFetch(){
   if(!S.apiUrl)return false;
   try{
-    const r=await fetch(S.apiUrl+'?action=list');
-    const d=await r.json();
+    const r=await fetch(S.apiUrl+'?action=list',{redirect:'follow'});
+    const text=await r.text();
+    const d=JSON.parse(text);
     if(d.success){S.emps=d.data;S.connected=true;lsave();return true}
-    return false;
-  }catch{S.connected=false;return false}
+    console.error('apiFetch error:',d);return false;
+  }catch(err){console.error('apiFetch exception:',err);S.connected=false;return false}
 }
 async function apiPost(body){
   if(!S.apiUrl)return false;
   try{
     const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify(body)});
-    const d=await r.json();
+    const text=await r.text();
+    const d=JSON.parse(text);
     if(d.success){await apiFetch();return true}
-    return false;
-  }catch{return false}
+    console.error('apiPost error:',d);return false;
+  }catch(err){console.error('apiPost exception:',err);return false}
 }
 async function apiDeptFetch(){
   if(!S.apiUrl)return false;
   try{
-    const r=await fetch(S.apiUrl+'?action=listDepts');
-    const d=await r.json();
+    const r=await fetch(S.apiUrl+'?action=listDepts',{redirect:'follow'});
+    const text=await r.text();
+    const d=JSON.parse(text);
     if(d.success){S.depts=d.data;dsave();return true}
     return false;
-  }catch{return false}
+  }catch(err){console.error('apiDeptFetch exception:',err);return false}
 }
 async function apiDeptPost(body){
   if(!S.apiUrl)return false;
