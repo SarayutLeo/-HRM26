@@ -300,7 +300,7 @@ function buildChart(year,emps){
 // ── Sidebar ────────────────────────────────────────────────────
 function renderSidebar(){
   const nav=[
-    {id:'dashboard',ico:'📊',lbl:'Dashboard'},
+    {id:'dashboard',ico:'📊',lbl:'ภาพรวมระบบ'},
     {id:'list',ico:'👥',lbl:'รายชื่อพนักงาน'},
     {id:'form',ico:'➕',lbl:'เพิ่มพนักงาน'},
     {id:'depts',ico:'🏬',lbl:'ฐานข้อมูลแผนก'},
@@ -311,12 +311,12 @@ function renderSidebar(){
     <div class="nav-sec">เมนูหลัก</div>
     ${nav.map(n=>`<div class="ni${S.page===n.id?' active':''}" onclick="goPage('${n.id}')"><span class="ico">${n.ico}</span><span>${n.lbl}</span></div>`).join('')}
     <div class="nav-sec" style="margin-top:14px">ตั้งค่า</div>
-    <div class="ni" onclick="openSetup()"><span class="ico">⚙️</span><span>Google Sheets</span></div>
+    <div class="ni" onclick="openSetup()"><span class="ico">⚙️</span><span>ตั้งค่าฐานข้อมูล</span></div>
   </div>
   <div class="sb-foot">
     <div class="conn-status">
       <div class="dot ${S.apiUrl&&S.connected?'on':'off'}"></div>
-      <span class="conn-lbl">${S.apiUrl&&S.connected?'Google Sheets':'Local Storage'}</span>
+      <span class="conn-lbl">${S.apiUrl&&S.connected?'Google Sheets':'เก็บข้อมูลในเครื่อง'}</span>
     </div>
   </div>
 </nav>`;
