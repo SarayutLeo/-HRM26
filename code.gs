@@ -25,8 +25,8 @@ const EMP_LABELS = [
 
 // ── Sheet: แผนก ────────────────────────────────────────────────
 const SHEET_DEPT  = 'แผนก';
-const DEPT_HEADERS = ['id', 'name', 'manager', 'assistantManager', 'createdAt', 'updatedAt'];
-const DEPT_LABELS  = ['ID (ระบบ)', 'ชื่อแผนก', 'ผู้จัดการแผนก', 'ผู้ช่วยผู้จัดการ', 'วันที่สร้าง', 'วันที่แก้ไข'];
+const DEPT_HEADERS = ['id', 'company', 'name', 'manager', 'assistantManager', 'createdAt', 'updatedAt'];
+const DEPT_LABELS  = ['ID (ระบบ)', 'บริษัท', 'ชื่อแผนก', 'ผู้จัดการแผนก', 'ผู้ช่วยผู้จัดการ', 'วันที่สร้าง', 'วันที่แก้ไข'];
 
 // ── Sheet helpers ──────────────────────────────────────────────
 function initSheet(name, labels, widths) {
@@ -47,7 +47,7 @@ function initSheet(name, labels, widths) {
 }
 
 function getEmpSheet()  { return initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,140,120,130,110,200,160,150,100,100,80,90,120,110,160,160]); }
-function getDeptSheet() { return initSheet(SHEET_DEPT, DEPT_LABELS, [140,160,160,160,160,160]); }
+function getDeptSheet() { return initSheet(SHEET_DEPT, DEPT_LABELS, [140,200,160,160,160,160,160]); }
 
 function rowToObj(headers, row) {
   const obj = {};

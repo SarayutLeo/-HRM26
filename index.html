@@ -733,8 +733,10 @@ function renderDeptForm(){
       </select></div>
     <div class="fg"><label class="lb">ชื่อแผนก <span class="req">*</span></label>
       <input type="text" name="name" value="${esc(d.name||'')}" required placeholder="เช่น ฝ่ายบัญชี, แผนก IT"></div>
-    <div class="fg full"><label class="lb">ผู้จัดการแผนก</label>
+    <div class="fg"><label class="lb">ผู้จัดการแผนก</label>
       <input type="text" name="manager" value="${esc(d.manager||'')}" placeholder="ชื่อผู้จัดการแผนก"></div>
+    <div class="fg"><label class="lb">ผู้ช่วยผู้จัดการ</label>
+      <input type="text" name="assistantManager" value="${esc(d.assistantManager||'')}" placeholder="ชื่อผู้ช่วยผู้จัดการ"></div>
   </div>
   <div class="form-foot">
     <button type="button" class="btn btn-g" onclick="goPage('depts')">ยกเลิก</button>
@@ -914,6 +916,7 @@ async function submitDeptForm(ev){
     company:fd.get('company').trim(),
     name:fd.get('name').trim(),
     manager:fd.get('manager').trim(),
+    assistantManager:fd.get('assistantManager').trim(),
     createdAt:isEdit?(S.depts.find(d=>d.id===S.deptEditId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
     updatedAt:new Date().toISOString(),
   };
