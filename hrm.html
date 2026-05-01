@@ -176,6 +176,9 @@ function lload(){try{return JSON.parse(localStorage.getItem('hrm_emps')||'[]')}c
 function lsave(){try{localStorage.setItem('hrm_emps',JSON.stringify(S.emps))}catch{}}
 function dload(){try{return JSON.parse(localStorage.getItem('hrm_depts')||'[]')}catch{return[]}}
 function dsave(){try{localStorage.setItem('hrm_depts',JSON.stringify(S.depts))}catch{}}
+function backupSave(b){try{localStorage.setItem('hrm_backup',JSON.stringify(b))}catch{}}
+function backupLoad(){try{const b=localStorage.getItem('hrm_backup');return b?JSON.parse(b):null}catch{return null}}
+function backupClear(){try{localStorage.removeItem('hrm_backup')}catch{}}
 
 // ── API (Google Apps Script) ───────────────────────────────────
 async function apiFetch(){
@@ -952,6 +955,7 @@ async function saveApi(){
   const url=document.getElementById('api-inp').value.trim();
   if(url&&(S.emps.length||S.depts.length)){
     S.localBackup={emps:[...S.emps],depts:[...S.depts]};
+    backupSave(S.localBackup);
   }
   S.apiUrl=url;localStorage.setItem('hrm_api',url);
   S.showSetup=false;
@@ -967,7 +971,7 @@ async function syncLocalToSheets(){
   let ok=0;let fail=0;
   for(const d of S.localBackup.depts){try{await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action:'createDept',data:d})});ok++}catch{fail++}}
   for(const e of S.localBackup.emps){try{await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action:'create',data:e})});ok++}catch{fail++}}
-  S.localBackup=null;
+  S.localBackup=null;backupClear();
   await Promise.all([apiFetch(),apiDeptFetch()]);
   S.loading=false;
   toast(fail===0?`อัพโหลดสำเร็จ ${ok} รายการ`:`สำเร็จ ${ok}, ล้มเหลว ${fail} รายการ`,fail===0?'ok':'err');
@@ -977,6 +981,7 @@ async function syncLocalToSheets(){
 // ── Init ───────────────────────────────────────────────────────
 S.emps=lload();
 S.depts=dload();
+S.localBackup=backupLoad();
 render();
 if(S.apiUrl){
   Promise.all([apiFetch(),apiDeptFetch()]).then(()=>render());
