@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HRM – ระบบจัดการข้อมูลพนักงาน</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --p:#0284c7;--pd:#0369a1;--pl:#e0f2fe;--pll:#f0f9ff;
+  --sb:#0f172a;--sb2:#1e293b;--sbt:#94a3b8;
+  --bg:#f0f9ff;--white:#fff;--bdr:#e2e8f0;
+  --txt:#0f172a;--muted:#64748b;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --shm:0 4px 12px rgba(0,0,0,.08);
+  --r:12px;--rs:8px
+}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+/* ── Layout ── */
+.layout{display:flex;min-height:100vh}
+/* ── Sidebar ── */
+.sidebar{width:240px;background:var(--sb);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:width .2s}
+.sb-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-logo .li{font-size:26px;margin-bottom:6px}
+.sb-logo h1{font-size:15px;font-weight:700;color:#fff;line-height:1.2}
+.sb-logo p{font-size:11px;color:#64748b;margin-top:2px}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-sec{padding:10px 18px 4px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.8px}
+.ni{display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;font-size:14px;font-weight:500;color:var(--sbt);border-left:3px solid transparent;transition:all .15s;white-space:nowrap;overflow:hidden}
+.ni:hover{background:rgba(255,255,255,.05);color:#fff}
+.ni.active{background:rgba(2,132,199,.18);color:#38bdf8;border-left-color:#38bdf8}
+.ni .ico{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.06)}
+.conn-status{display:flex;align-items:center;gap:8px;font-size:11px;color:#64748b}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot.on{background:#10b981}.dot.off{background:#f59e0b}
+/* ── Main ── */
+.main{margin-left:240px;flex:1;min-height:100vh;padding:28px 30px}
+/* ── Page header ── */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:24px}
+.ph h2{font-size:22px;font-weight:700}
+.ph p{font-size:13px;color:var(--muted);margin-top:2px}
+.ph-actions{display:flex;gap:8px;flex-shrink:0}
+/* ── Stats ── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px}
+.sc{background:var(--white);border-radius:var(--r);padding:18px 16px;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
+.sc-ic{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.ic-b{background:#dbeafe}.ic-g{background:#d1fae5}.ic-r{background:#ffe4e6}.ic-y{background:#fef3c7}
+.sc-info h3{font-size:26px;font-weight:700;line-height:1;margin-bottom:3px}
+.sc-info .lb{font-size:12px;color:var(--muted);font-weight:500}
+.sc-b h3{color:#1d4ed8}.sc-g h3{color:#059669}.sc-r h3{color:#dc2626}.sc-y h3{color:#d97706}
+/* ── Card ── */
+.card{background:var(--white);border-radius:var(--r);padding:20px;box-shadow:var(--sh);margin-bottom:20px}
+/* ── Chart ── */
+.chart-card{background:var(--white);border-radius:var(--r);padding:20px;box-shadow:var(--sh);margin-bottom:20px}
+.chart-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.chart-top h3{font-size:15px;font-weight:700}
+.chart-controls{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted)}
+.leg{display:flex;align-items:center;gap:5px}
+.ldot{width:10px;height:10px;border-radius:50%;display:inline-block}
+select.yr{padding:6px 10px;border:1.5px solid var(--bdr);border-radius:7px;font:13px 'Sarabun',sans-serif;color:var(--txt);outline:none;background:#fff;cursor:pointer}
+select.yr:focus{border-color:var(--p)}
+/* ── Table section ── */
+.tbl-card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-bottom:20px}
+.tbl-toolbar{padding:14px 18px;border-bottom:1px solid var(--bdr);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.srch{display:flex;align-items:center;gap:8px;background:var(--pll);border:1.5px solid var(--bdr);border-radius:8px;padding:7px 12px;flex:1;min-width:200px;max-width:300px}
+.srch input{border:none;background:transparent;font:14px 'Sarabun',sans-serif;color:var(--txt);outline:none;width:100%}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:5px 12px;border-radius:20px;border:1.5px solid var(--bdr);background:#fff;cursor:pointer;font:12px 'Sarabun',sans-serif;color:var(--muted);transition:all .15s;white-space:nowrap}
+.chip.active{background:var(--p);border-color:var(--p);color:#fff}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--pll)}
+th{padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:var(--pd);white-space:nowrap;border-bottom:2px solid var(--pl)}
+td{padding:11px 14px;font-size:13px;color:var(--txt);border-bottom:1px solid #f8fafc;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--pll)}
+/* ── Badge ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.ba{background:#d1fae5;color:#065f46}
+.br{background:#ffe4e6;color:#9f1239}
+/* ── Buttons ── */
+.btn{padding:8px 18px;border-radius:var(--rs);border:none;cursor:pointer;font:600 13px 'Sarabun',sans-serif;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-p{background:var(--p);color:#fff}.btn-p:hover{background:var(--pd)}
+.btn-g{background:#f1f5f9;color:#475569;border:none}.btn-g:hover{background:#e2e8f0}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
+.btn-ed{background:#dbeafe;color:#1d4ed8}.btn-ed:hover{background:#bfdbfe}
+.btn-del{background:#ffe4e6;color:#dc2626}.btn-del:hover{background:#fecaca}
+/* ── Form ── */
+.form-card{background:var(--white);border-radius:var(--r);padding:24px;box-shadow:var(--sh)}
+.fsec{font-size:13px;font-weight:700;color:var(--pd);padding-bottom:10px;border-bottom:2px solid var(--pl);margin-bottom:16px;margin-top:22px}
+.fsec:first-of-type{margin-top:0}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+label.lb{font-size:12px;font-weight:600;color:#374151}
+.req{color:#ef4444}
+input[type=text],input[type=email],input[type=date],input[type=number],select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:7px;font:14px 'Sarabun',sans-serif;color:var(--txt);background:#fafafa;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(2,132,199,.12);background:#fff}
+textarea{resize:vertical;min-height:72px}
+.form-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--bdr)}
+/* ── Modal ── */
+.ov{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:var(--r);padding:24px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h3{font-size:17px;font-weight:700;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.7}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.info-box{background:var(--pll);border-radius:8px;padding:12px;font-size:12px;color:var(--pd);margin-bottom:16px;line-height:1.8}
+.info-box code{background:var(--pl);padding:1px 5px;border-radius:4px;font-size:11px}
+/* ── Toast ── */
+.toast{position:fixed;bottom:20px;right:20px;background:#0f172a;color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:500;box-shadow:var(--shm);z-index:9999;animation:su .25s ease}
+.toast.ok{background:#059669}.toast.err{background:#dc2626}
+@keyframes su{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+/* ── Empty ── */
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty .ei{font-size:44px;margin-bottom:10px}
+.empty h3{font-size:15px;color:#475569;margin-bottom:5px}
+.empty p{font-size:13px}
+/* ── Emp code ── */
+.ecode{font-family:monospace;font-size:12px;color:var(--p);font-weight:700;background:var(--pll);padding:2px 7px;border-radius:5px}
+/* ── Responsive ── */
+@media(max-width:900px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .fg3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:700px){
+  .sidebar{width:58px}
+  .sb-logo h1,.sb-logo p,.ni span:not(.ico),.nav-sec,.conn-lbl{display:none}
+  .main{margin-left:58px;padding:16px}
+  .ph{flex-direction:column;gap:10px}
+  .fg2{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .stats{grid-template-columns:1fr 1fr}
+  .fg3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ── Constants ──────────────────────────────────────────────────
+const MTH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const COMPANIES=['บริษัท เคมเทค อินโนเวชั่น จำกัด','บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด'];
+
+// ── State ──────────────────────────────────────────────────────
+const S={
+  page:'dashboard',
+  emps:[],
+  editId:null,
+  search:'',
+  filterSt:'all',
+  filterCompany:'all',
+  filterDept:'all',
+  filterPosition:'all',
+  dashYear:new Date().getFullYear(),
+  dashCompany:'all',
+  dashDept:'all',
+  depts:[],
+  deptEditId:null,
+  deptDelId:null,
+  deptSearch:'',
+  apiUrl:localStorage.getItem('hrm_api')||'',
+  connected:false,
+  loading:false,
+  showSetup:false,
+  delId:null,
+};
+
+// ── Storage ────────────────────────────────────────────────────
+function lload(){try{return JSON.parse(localStorage.getItem('hrm_emps')||'[]')}catch{return[]}}
+function lsave(){try{localStorage.setItem('hrm_emps',JSON.stringify(S.emps))}catch{}}
+function dload(){try{return JSON.parse(localStorage.getItem('hrm_depts')||'[]')}catch{return[]}}
+function dsave(){try{localStorage.setItem('hrm_depts',JSON.stringify(S.depts))}catch{}}
+
+// ── API (Google Apps Script) ───────────────────────────────────
+async function apiFetch(){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl+'?action=list');
+    const d=await r.json();
+    if(d.success){S.emps=d.data;S.connected=true;lsave();return true}
+    return false;
+  }catch{S.connected=false;return false}
+}
+async function apiPost(body){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.success){await apiFetch();return true}
+    return false;
+  }catch{return false}
+}
+async function apiDeptFetch(){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl+'?action=listDepts');
+    const d=await r.json();
+    if(d.success){S.depts=d.data;dsave();return true}
+    return false;
+  }catch{return false}
+}
+async function apiDeptPost(body){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.success){await apiDeptFetch();return true}
+    return false;
+  }catch{return false}
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function uid(){return'E'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase()}
+function duid(){return'D'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase()}
+function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function fdate(d){
+  if(!d)return'-';
+  const dt=new Date(d+'T00:00:00');
+  if(isNaN(dt))return d;
+  return dt.toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric'})
+}
+function pdate(s){if(!s)return null;const d=new Date(s+'T00:00:00');return isNaN(d)?null:d}
+function calcAge(birthDate){
+  const b=pdate(birthDate);if(!b)return'-';
+  const t=new Date();
+  let y=t.getFullYear()-b.getFullYear();
+  if(t.getMonth()<b.getMonth()||(t.getMonth()===b.getMonth()&&t.getDate()<b.getDate()))y--;
+  return y>=0?`${y} ปี`:'-';
+}
+function tenure(startDate,endDate){
+  const s=pdate(startDate);if(!s)return'-';
+  const e=endDate?pdate(endDate):new Date();
+  if(!e||e<s)return'-';
+  let y=e.getFullYear()-s.getFullYear();
+  let m=e.getMonth()-s.getMonth();
+  let d=e.getDate()-s.getDate();
+  if(d<0){m--;d+=new Date(e.getFullYear(),e.getMonth(),0).getDate()}
+  if(m<0){y--;m+=12}
+  if(y===0&&m===0)return`${d} วัน`;
+  if(y===0)return`${m} เดือน ${d} วัน`;
+  if(m===0)return`${y} ปี`;
+  return`${y} ปี ${m} เดือน`;
+}
+function toast(msg,type=''){
+  document.querySelectorAll('.toast').forEach(e=>e.remove());
+  const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:'');el.textContent=msg;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),3000)
+}
+
+// ── Chart ──────────────────────────────────────────────────────
+function buildChart(year,emps){
+  if(!emps)emps=S.emps;
+  const hi=new Array(12).fill(0),re=new Array(12).fill(0);
+  emps.forEach(e=>{
+    const sd=pdate(e.startDate);
+    if(sd&&sd.getFullYear()===year)hi[sd.getMonth()]++;
+    if(e.status==='resigned'&&e.resignDate){
+      const rd=pdate(e.resignDate);
+      if(rd&&rd.getFullYear()===year)re[rd.getMonth()]++;
+    }
+  });
+  const maxV=Math.max(...hi,...re,5);
+  const rmax=Math.ceil(maxV/5)*5;
+  const W=820,H=170,PL=36,PB=24,cH=H-PB-8,cW=W-PL-10;
+  const colW=cW/12;const bW=Math.min(colW*0.36,18);
+  let g='',bars='';
+  for(let i=0;i<=5;i++){
+    const v=Math.round(i/5*rmax);const y=8+cH-(i/5)*cH;
+    g+=`<line x1="${PL}" y1="${y}" x2="${W-10}" y2="${y}" stroke="#f0f9ff" stroke-width="1"/>`;
+    g+=`<text x="${PL-4}" y="${y+3.5}" text-anchor="end" font-size="9" fill="#94a3b8">${v}</text>`;
+  }
+  for(let i=0;i<12;i++){
+    const cx=PL+(i+0.5)*colW;const bY=8+cH;
+    const hH=hi[i]?(hi[i]/rmax)*cH:0;const rH=re[i]?(re[i]/rmax)*cH:0;
+    const hx=cx-bW-1,rx=cx+1;
+    if(hi[i]>0){bars+=`<rect x="${hx}" y="${bY-hH}" width="${bW}" height="${hH}" rx="3" fill="#0ea5e9"/>`;bars+=`<text x="${hx+bW/2}" y="${bY-hH-4}" text-anchor="middle" font-size="9" fill="#0284c7" font-weight="700">${hi[i]}</text>`}
+    else{bars+=`<rect x="${hx}" y="${bY-2}" width="${bW}" height="2" rx="1" fill="#e2e8f0"/>`}
+    if(re[i]>0){bars+=`<rect x="${rx}" y="${bY-rH}" width="${bW}" height="${rH}" rx="3" fill="#f43f5e"/>`;bars+=`<text x="${rx+bW/2}" y="${bY-rH-4}" text-anchor="middle" font-size="9" fill="#e11d48" font-weight="700">${re[i]}</text>`}
+    else{bars+=`<rect x="${rx}" y="${bY-2}" width="${bW}" height="2" rx="1" fill="#e2e8f0"/>`}
+    bars+=`<text x="${cx}" y="${bY+16}" text-anchor="middle" font-size="10" fill="#64748b">${MTH[i]}</text>`;
+  }
+  return`<svg viewBox="0 0 ${W} ${H+10}" style="width:100%;height:auto;display:block;overflow:visible">
+    ${g}
+    <line x1="${PL}" y1="8" x2="${PL}" y2="${8+cH}" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="${PL}" y1="${8+cH}" x2="${W-10}" y2="${8+cH}" stroke="#e2e8f0" stroke-width="1.5"/>
+    ${bars}
+  </svg>`;
+}
+
+// ── Sidebar ────────────────────────────────────────────────────
+function renderSidebar(){
+  const nav=[
+    {id:'dashboard',ico:'📊',lbl:'Dashboard'},
+    {id:'list',ico:'👥',lbl:'รายชื่อพนักงาน'},
+    {id:'form',ico:'➕',lbl:'เพิ่มพนักงาน'},
+    {id:'depts',ico:'🏬',lbl:'ฐานข้อมูลแผนก'},
+  ];
+  return`<nav class="sidebar">
+  <div class="sb-logo"><div class="li">🏢</div><h1>HRM System</h1><p>ระบบจัดการพนักงาน</p></div>
+  <div class="sb-nav">
+    <div class="nav-sec">เมนูหลัก</div>
+    ${nav.map(n=>`<div class="ni${S.page===n.id?' active':''}" onclick="goPage('${n.id}')"><span class="ico">${n.ico}</span><span>${n.lbl}</span></div>`).join('')}
+    <div class="nav-sec" style="margin-top:14px">ตั้งค่า</div>
+    <div class="ni" onclick="openSetup()"><span class="ico">⚙️</span><span>Google Sheets</span></div>
+  </div>
+  <div class="sb-foot">
+    <div class="conn-status">
+      <div class="dot ${S.apiUrl&&S.connected?'on':'off'}"></div>
+      <span class="conn-lbl">${S.apiUrl&&S.connected?'Google Sheets':'Local Storage'}</span>
+    </div>
+  </div>
+</nav>`;
+}
+
+// ── Dashboard ──────────────────────────────────────────────────
+function renderDash(){
+  const now=new Date();
+  const thisYear=now.getFullYear();
+
+  // กรองตามบริษัท + แผนก
+  let emps=S.emps;
+  if(S.dashCompany!=='all')emps=emps.filter(e=>e.company===S.dashCompany);
+  if(S.dashDept!=='all')emps=emps.filter(e=>e.department===S.dashDept);
+
+  // Stats 3 หัวข้อ
+  const active=emps.filter(e=>e.status==='active').length;
+  const newYear=emps.filter(e=>{const d=pdate(e.startDate);return d&&d.getFullYear()===thisYear}).length;
+  const resignYear=emps.filter(e=>{
+    if(e.status!=='resigned')return false;
+    const d=pdate(e.resignDate);return d&&d.getFullYear()===thisYear;
+  }).length;
+
+  // ปีสำหรับ chart dropdown
+  const yrs=new Set([thisYear,thisYear-1,thisYear-2]);
+  S.emps.forEach(e=>{if(e.startDate)yrs.add(pdate(e.startDate)?.getFullYear());if(e.resignDate)yrs.add(pdate(e.resignDate)?.getFullYear())});
+  const yopts=[...yrs].filter(Boolean).sort((a,b)=>a-b).map(y=>`<option value="${y}"${y===S.dashYear?' selected':''}>${y}</option>`).join('');
+
+  // Dropdown บริษัท
+  const copts=COMPANIES.map(c=>`<option value="${esc(c)}"${S.dashCompany===c?' selected':''}>${esc(c)}</option>`).join('');
+
+  // Dropdown แผนก — กรองตามบริษัทที่เลือก
+  const filteredDepts=S.depts.filter(d=>S.dashCompany==='all'||d.company===S.dashCompany);
+  const deptNames=[...new Set(filteredDepts.map(d=>d.name))].sort((a,b)=>a.localeCompare(b,'th'));
+  const dopts=deptNames.map(n=>`<option value="${n}"${S.dashDept===n?' selected':''}>${n}</option>`).join('');
+
+  // พนักงานเข้าใหม่ล่าสุด (เฉพาะ active เรียงตามวันเริ่มงานล่าสุด)
+  const recent=[...emps].filter(e=>e.status==='active')
+    .sort((a,b)=>{const da=pdate(a.startDate),db=pdate(b.startDate);return(db||0)-(da||0)}).slice(0,5);
+
+  const hasFilter=S.dashCompany!=='all'||S.dashDept!=='all';
+
+  return`
+<div class="ph"><div><h2>Dashboard</h2>
+  <p>ภาพรวมสถิติพนักงาน${S.dashCompany!=='all'?` — ${esc(S.dashCompany.replace('บริษัท ','').replace(' จำกัด',''))}`:''} ${S.dashDept!=='all'?`/ แผนก${esc(S.dashDept)}`:''}</p>
+</div>
+  <div class="ph-actions"><button class="btn btn-p" onclick="goPage('form')">+ เพิ่มพนักงาน</button></div>
+</div>
+
+<div class="card" style="margin-bottom:20px;padding:14px 18px">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:600;color:var(--muted)">กรองข้อมูล:</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:12px;color:var(--muted);font-weight:600">บริษัท</label>
+      <select class="yr" style="max-width:240px" onchange="setDashCompany(this.value)">
+        <option value="all"${S.dashCompany==='all'?' selected':''}>ทุกบริษัท</option>
+        ${copts}
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:12px;color:var(--muted);font-weight:600">แผนก</label>
+      <select class="yr" onchange="setDashDept(this.value)">
+        <option value="all"${S.dashDept==='all'?' selected':''}>ทุกแผนก</option>
+        ${dopts}
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:12px;color:var(--muted);font-weight:600">ปี (กราฟ)</label>
+      <select class="yr" onchange="setDashYear(this.value)">${yopts}</select>
+    </div>
+    ${hasFilter?`<button class="btn btn-sm btn-g" onclick="clearDashFilter()" style="font-size:11px">✕ ล้างตัวกรอง</button>`:''}
+  </div>
+</div>
+
+<div class="stats">
+  <div class="sc sc-g"><div class="sc-ic ic-g">✅</div><div class="sc-info"><h3>${active}</h3><div class="lb">พนักงานปัจจุบัน</div></div></div>
+  <div class="sc sc-b"><div class="sc-ic ic-b">🆕</div><div class="sc-info"><h3>${newYear}</h3><div class="lb">พนักงานเข้าใหม่ปี ${thisYear}</div></div></div>
+  <div class="sc sc-r"><div class="sc-ic ic-r">🚪</div><div class="sc-info"><h3>${resignYear}</h3><div class="lb">พนักงานลาออกปี ${thisYear}</div></div></div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-top">
+    <h3>สถิติการรับพนักงานใหม่และลาออก รายเดือน</h3>
+    <div class="chart-controls">
+      <div class="legend">
+        <span class="leg"><span class="ldot" style="background:#0ea5e9"></span>รับเข้า</span>
+        <span class="leg"><span class="ldot" style="background:#f43f5e"></span>ลาออก</span>
+      </div>
+      <select class="yr" onchange="setDashYear(this.value)">${yopts}</select>
+    </div>
+  </div>
+  ${buildChart(S.dashYear,emps)}
+</div>
+
+<div class="card">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div style="font-size:15px;font-weight:700">พนักงานเข้าใหม่ล่าสุด</div>
+    <button class="btn btn-sm btn-g" onclick="goPage('list')">ดูทั้งหมด →</button>
+  </div>
+  ${recent.length?`<div class="tbl-wrap"><table>
+    <thead><tr><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>บริษัท</th><th>แผนก</th><th>ตำแหน่ง</th><th>วันเริ่มงาน</th></tr></thead>
+    <tbody>${recent.map(e=>`<tr>
+      <td><span class="ecode">${esc(e.empId)}</span></td>
+      <td><strong>${esc(e.fullName)}</strong></td>
+      <td style="font-size:12px;max-width:160px;white-space:normal">${esc(e.company||'-')}</td>
+      <td>${esc(e.department||'-')}</td>
+      <td>${esc(e.position||'-')}</td>
+      <td>${fdate(e.startDate)}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`:`<div class="empty"><div class="ei">👤</div><h3>ยังไม่มีข้อมูลพนักงาน</h3><p>กดปุ่ม "เพิ่มพนักงาน" เพื่อเริ่มต้น</p></div>`}
+</div>`;
+}
+
+// ── Employee List ──────────────────────────────────────────────
+function renderList(){
+  let baseEmps=[...S.emps];
+  const q=S.search.toLowerCase();
+  if(q)baseEmps=baseEmps.filter(e=>[e.fullName,e.empId,e.department,e.position,e.company].some(v=>(v||'').toLowerCase().includes(q)));
+  if(S.filterCompany!=='all')baseEmps=baseEmps.filter(e=>e.company===S.filterCompany);
+  if(S.filterDept!=='all')baseEmps=baseEmps.filter(e=>e.department===S.filterDept);
+  if(S.filterPosition!=='all')baseEmps=baseEmps.filter(e=>e.position===S.filterPosition);
+  let emps=S.filterSt!=='all'?baseEmps.filter(e=>e.status===S.filterSt):[...baseEmps];
+  emps.sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
+  const cntAll=baseEmps.length;
+  const cntActive=baseEmps.filter(e=>e.status==='active').length;
+  const cntResigned=baseEmps.filter(e=>e.status==='resigned').length;
+
+  // Dropdown บริษัท
+  const copts=COMPANIES.map(c=>`<option value="${esc(c)}"${S.filterCompany===c?' selected':''}>${esc(c)}</option>`).join('');
+
+  // Dropdown แผนก — กรองตามบริษัทที่เลือก, เรียงตัวอักษร
+  const deptPool=S.depts.filter(d=>S.filterCompany==='all'||d.company===S.filterCompany);
+  const deptNames=[...new Set(deptPool.map(d=>d.name))].sort((a,b)=>a.localeCompare(b,'th'));
+  const dopts=deptNames.map(n=>`<option value="${esc(n)}"${S.filterDept===n?' selected':''}>${esc(n)}</option>`).join('');
+
+  // Dropdown ตำแหน่ง
+  const POSITIONS=['พนักงาน','หัวหน้าทีม','หัวหน้างาน','ผู้ช่วยผู้จัดการแผนก','ผู้จัดการแผนก','ผู้จัดการทั่วไป','กรรมการผู้จัดการ'];
+  const popts=POSITIONS.map(p=>`<option value="${esc(p)}"${S.filterPosition===p?' selected':''}>${esc(p)}</option>`).join('');
+
+  const hasFilter=S.filterCompany!=='all'||S.filterDept!=='all'||S.filterPosition!=='all';
+
+  return`
+<div class="ph">
+  <div><h2>รายชื่อพนักงาน</h2><p>แสดง ${emps.length} จาก ${S.emps.length} คน</p></div>
+  <div class="ph-actions">
+    <button class="btn btn-g" onclick="loadData()">↻ รีเฟรช</button>
+    <button class="btn btn-p" onclick="goPage('form')">+ เพิ่มพนักงาน</button>
+  </div>
+</div>
+<div class="tbl-card">
+  <div class="tbl-toolbar" style="flex-direction:column;align-items:stretch;gap:10px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div class="srch" style="flex:1;min-width:180px"><span style="color:#94a3b8;font-size:14px">🔍</span>
+        <input id="emp-search-inp" type="text" placeholder="ค้นหาชื่อ, รหัส, แผนก..." value="${esc(S.search)}" oninput="setSearch(this.value)">
+      </div>
+      <div class="chips">
+        <button class="chip${S.filterSt==='all'?' active':''}" onclick="setFSt('all')">ทั้งหมด (${cntAll})</button>
+        <button class="chip${S.filterSt==='active'?' active':''}" onclick="setFSt('active')">ปัจจุบัน (${cntActive})</button>
+        <button class="chip${S.filterSt==='resigned'?' active':''}" onclick="setFSt('resigned')">ลาออกแล้ว (${cntResigned})</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--bdr)">
+      <span style="font-size:12px;font-weight:600;color:var(--muted)">กรอง:</span>
+      <div style="display:flex;align-items:center;gap:5px">
+        <label style="font-size:12px;color:var(--muted)">บริษัท</label>
+        <select class="yr" style="max-width:220px" onchange="setListCompany(this.value)">
+          <option value="all"${S.filterCompany==='all'?' selected':''}>ทุกบริษัท</option>
+          ${copts}
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <label style="font-size:12px;color:var(--muted)">แผนก</label>
+        <select class="yr" onchange="setListDept(this.value)">
+          <option value="all"${S.filterDept==='all'?' selected':''}>ทุกแผนก</option>
+          ${dopts}
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <label style="font-size:12px;color:var(--muted)">ตำแหน่ง</label>
+        <select class="yr" onchange="setListPosition(this.value)">
+          <option value="all"${S.filterPosition==='all'?' selected':''}>ทุกตำแหน่ง</option>
+          ${popts}
+        </select>
+      </div>
+      ${hasFilter?`<button class="btn btn-sm btn-g" onclick="clearListFilter()" style="font-size:11px">✕ ล้างตัวกรอง</button>`:''}
+    </div>
+  </div>
+  <div class="tbl-wrap">
+  ${emps.length?`<table>
+    <thead><tr>
+      <th>#</th><th>รหัสพนักงาน</th><th>ชื่อ-นามสกุล</th><th>อายุ</th><th>บริษัท</th><th>แผนก</th>
+      <th>ตำแหน่ง</th><th>วันเริ่มงาน</th><th>อายุงาน</th><th>ผู้บังคับบัญชา</th><th>สถานะ</th><th>จัดการ</th>
+    </tr></thead>
+    <tbody>${emps.map((e,i)=>{const grey=e.status==='resigned';return`<tr style="${grey?'color:#94a3b8':''}">
+      <td style="color:#cbd5e1;font-size:12px">${i+1}</td>
+      <td><span class="ecode" style="${grey?'background:#f1f5f9;color:#94a3b8':''}">${esc(e.empId)}</span></td>
+      <td><span style="${grey?'':'font-weight:600'}">${esc(e.fullName)}</span><br><span style="font-size:11px;color:${grey?'#cbd5e1':'#64748b'}">${esc(e.email||'')}</span></td>
+      <td style="text-align:center;font-size:13px">${calcAge(e.birthDate)}</td>
+      <td>${esc(e.company||'-')}</td>
+      <td>${esc(e.department||'-')}</td>
+      <td>${esc(e.position||'-')}</td>
+      <td>${fdate(e.startDate)}</td>
+      <td><span style="font-size:12px;color:${e.status==='active'?'#0369a1':'#64748b'};font-weight:600">${tenure(e.startDate,e.status==='resigned'?e.resignDate:null)}</span>${e.status==='resigned'?'<br><span style="font-size:10px;color:#94a3b8">ถึงวันลาออก</span>':''}</td>
+      <td>${esc(e.supervisor||'-')}</td>
+      <td><span class="badge ${e.status==='active'?'ba':'br'}">${e.status==='active'?'พนักงานปัจจุบัน':'ลาออกแล้ว'}</span>${e.status==='resigned'&&e.resignDate?`<br><span style="font-size:11px;color:#94a3b8">${fdate(e.resignDate)}</span>`:''}</td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-sm btn-ed" onclick="editEmp('${e.id}')">แก้ไข</button>
+        <button class="btn btn-sm btn-del" onclick="confirmDel('${e.id}')">ลบ</button>
+      </div></td>
+    </tr>`}).join('')}</tbody>
+  </table>`:`<div class="empty"><div class="ei">🔍</div><h3>ไม่พบข้อมูล</h3><p>ลองเปลี่ยนคำค้นหา</p></div>`}
+  </div>
+</div>
+`;
+}
+
+// ── Form ───────────────────────────────────────────────────────
+function renderForm(){
+  const isEdit=!!S.editId;
+  const e=isEdit?S.emps.find(x=>x.id===S.editId)||{}:{};
+  const sugId='EMP'+String(S.emps.length+1).padStart(4,'0');
+  return`
+<div class="ph">
+  <div><h2>${isEdit?'แก้ไขข้อมูลพนักงาน':'เพิ่มพนักงานใหม่'}</h2>
+    <p>${isEdit?`แก้ไข: ${esc(e.fullName||'')} (${esc(e.empId||'')})` :'กรอกข้อมูลพนักงานให้ครบถ้วน'}</p>
+  </div>
+  <button class="btn btn-g" onclick="goPage('list')">← กลับ</button>
+</div>
+<form id="ef" onsubmit="submitForm(event)">
+<div class="form-card">
+  <div class="fsec">ข้อมูลพื้นฐาน</div>
+  <div class="fg2">
+    <div class="fg"><label class="lb">รหัสพนักงาน <span class="req">*</span></label>
+      <input type="text" name="empId" value="${esc(e.empId||sugId)}" required placeholder="เช่น EMP0001"></div>
+    <div class="fg"><label class="lb">ชื่อ-นามสกุล <span class="req">*</span></label>
+      <input type="text" name="fullName" value="${esc(e.fullName||'')}" required placeholder="ชื่อ-นามสกุล"></div>
+    <div class="fg"><label class="lb">บริษัท <span class="req">*</span></label>
+      <select name="company" id="company-sel" onchange="onFormCompanyChange(this.value)" required>
+        <option value="">-- เลือกบริษัท --</option>
+        <option value="บริษัท เคมเทค อินโนเวชั่น จำกัด" ${e.company==='บริษัท เคมเทค อินโนเวชั่น จำกัด'?'selected':''}>บริษัท เคมเทค อินโนเวชั่น จำกัด</option>
+        <option value="บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด" ${e.company==='บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด'?'selected':''}>บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด</option>
+      </select></div>
+    <div class="fg"><label class="lb">แผนก <span class="req">*</span></label>
+      <select name="department" id="dept-sel" onchange="fillSupervisor(this.value)" required>
+        <option value="">-- เลือกแผนก --</option>
+        ${[...S.depts].filter(d=>!e.company||d.company===e.company).sort((a,b)=>(a.name||'').localeCompare(b.name||'','th')).map(d=>`<option value="${esc(d.name)}"${e.department===d.name?' selected':''}>${esc(d.name)}</option>`).join('')}
+        ${e.department&&!S.depts.find(d=>d.name===e.department)?`<option value="${esc(e.department)}" selected>${esc(e.department)}</option>`:''}
+      </select>
+      ${S.depts.length===0?`<span style="font-size:11px;color:#f59e0b;margin-top:3px">⚠️ ยังไม่มีแผนก — <a href="#" onclick="goPage('depts');return false" style="color:var(--p)">เพิ่มแผนกก่อน</a></span>`:''}
+    </div>
+    <div class="fg"><label class="lb">ตำแหน่ง <span class="req">*</span></label>
+      <select name="position" required>
+        ${['พนักงาน','หัวหน้าทีม','หัวหน้างาน','ผู้ช่วยผู้จัดการแผนก','ผู้จัดการแผนก','ผู้จัดการทั่วไป','กรรมการผู้จัดการ'].map(p=>`<option value="${p}"${(e.position||'พนักงาน')===p?' selected':''}>${p}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label class="lb">ผู้บังคับบัญชา <span style="font-size:11px;color:#94a3b8;font-weight:400">(อัตโนมัติจากแผนก)</span></label>
+      <input type="text" name="supervisor" id="supervisor-inp" value="${esc(e.supervisor||'')}" placeholder="เลือกแผนกเพื่อกรอกอัตโนมัติ"></div>
+    <div class="fg"><label class="lb">อีเมล</label>
+      <input type="email" name="email" value="${esc(e.email||'')}" placeholder="email@company.com"></div>
+    <div class="fg"><label class="lb">วันเกิด</label>
+      <input type="date" name="birthDate" value="${esc(e.birthDate||'')}"></div>
+    <div class="fg"><label class="lb">วันที่เริ่มงาน <span class="req">*</span></label>
+      <input type="date" name="startDate" value="${esc(e.startDate||'')}" required></div>
+    <div class="fg full"><label class="lb">ที่อยู่</label>
+      <textarea name="address" placeholder="ที่อยู่ปัจจุบัน">${esc(e.address||'')}</textarea></div>
+  </div>
+
+  <div class="fsec">สิทธิการลา (จำนวนวัน/ปี)</div>
+  <div class="fg3">
+    <div class="fg"><label class="lb">ลาป่วย – ไม่มีใบรับรองแพทย์</label>
+      <input type="number" name="sickLeaveNoDoc" value="${e.sickLeaveNoDoc??3}" min="0" placeholder="วัน"></div>
+    <div class="fg"><label class="lb">ลาป่วย – มีใบรับรองแพทย์</label>
+      <input type="number" name="sickLeaveWithDoc" value="${e.sickLeaveWithDoc??30}" min="0" placeholder="วัน"></div>
+    <div class="fg"><label class="lb">ลากิจ</label>
+      <input type="number" name="personalLeave" value="${e.personalLeave??3}" min="0" placeholder="วัน"></div>
+    <div class="fg"><label class="lb">ลาพักร้อน</label>
+      <input type="number" name="annualLeave" value="${e.annualLeave??6}" min="0" placeholder="วัน"></div>
+  </div>
+
+  <div class="fsec">ข้อมูลเงินเดือน</div>
+  <div class="fg3">
+    <div class="fg"><label class="lb">ฐานเงินเดือน (บาท)</label>
+      <input type="number" name="baseSalary" id="sal-base" value="${e.baseSalary||''}" min="0" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label class="lb">ค่าตำแหน่ง (บาท)</label>
+      <input type="number" name="positionAllowance" id="sal-pos" value="${e.positionAllowance||''}" min="0" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label class="lb">ค่าสวัสดิการอื่น (บาท)</label>
+      <input type="number" name="otherBenefits" id="sal-other" value="${e.otherBenefits||''}" min="0" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label class="lb">รายได้รวมต่อเดือน (บาท)</label>
+      <input type="text" id="sal-total" value="${e.baseSalary||e.positionAllowance||e.otherBenefits?((parseFloat(e.baseSalary)||0)+(parseFloat(e.positionAllowance)||0)+(parseFloat(e.otherBenefits)||0)).toLocaleString('th-TH'):''}" placeholder="คำนวณอัตโนมัติ" readonly style="background:#f0f9ff;color:var(--pd);font-weight:700;cursor:default"></div>
+  </div>
+
+  <div class="fsec">สถานะการทำงาน</div>
+  <div class="fg2">
+    <div class="fg"><label class="lb">สถานะปัจจุบัน <span class="req">*</span></label>
+      <select name="status" id="st-sel" onchange="toggleRD(this.value)" required>
+        <option value="active" ${(e.status||'active')==='active'?'selected':''}>พนักงานปัจจุบัน</option>
+        <option value="resigned" ${e.status==='resigned'?'selected':''}>ลาออกแล้ว</option>
+      </select>
+    </div>
+    <div class="fg" id="rd-wrap" style="display:${e.status==='resigned'?'flex':'none'}"><label class="lb">วันที่ลาออก <span class="req">*</span></label>
+      <input type="date" name="resignDate" id="rd-inp" value="${esc(e.resignDate||'')}" ${e.status==='resigned'?'required':''}></div>
+  </div>
+
+  <div class="form-foot">
+    <button type="button" class="btn btn-g" onclick="goPage('list')">ยกเลิก</button>
+    <button type="submit" class="btn btn-p">${isEdit?'💾 บันทึกการแก้ไข':'✅ เพิ่มพนักงาน'}</button>
+  </div>
+</div>
+</form>`;
+}
+
+// ── Dept List ──────────────────────────────────────────────────
+function renderDepts(){
+  const q=S.deptSearch.toLowerCase();
+  function deptTable(list,idx0){
+    if(!list.length)return`<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">ยังไม่มีแผนก</td></tr>`;
+    return list.map((d,i)=>{
+      const cnt=S.emps.filter(e=>e.department===d.name&&e.status==='active').length;
+      return`<tr>
+        <td style="color:#94a3b8;font-size:12px">${idx0+i+1}</td>
+        <td><strong style="color:var(--pd)">${esc(d.name)}</strong></td>
+        <td>${d.manager?`<span style="font-weight:600">${esc(d.manager)}</span>`:'-'}</td>
+        <td><span style="background:var(--pl);color:var(--pd);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">${cnt} คน</span></td>
+        <td><div style="display:flex;gap:4px">
+          <button class="btn btn-sm btn-ed" onclick="editDept('${d.id}')">แก้ไข</button>
+          <button class="btn btn-sm btn-del" onclick="confirmDeptDel('${d.id}')">ลบ</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+  // แผนกที่ยังไม่ได้ระบุบริษัท (ข้อมูลเก่า)
+  const unassigned=S.depts.filter(d=>!d.company||!COMPANIES.includes(d.company));
+  const allSections=[
+    ...COMPANIES.map(co=>({co,label:co.includes('อินโนเวชั่น')?'เคมเทค อินโนเวชั่น':'เคมเทค อินเตอร์โลจิสติกส์'})),
+    ...(unassigned.length?[{co:'__none__',label:'ยังไม่ระบุบริษัท ⚠️'}]:[])
+  ];
+  const sections=allSections.map(({co,label})=>{
+    let list=co==='__none__'?[...unassigned]:S.depts.filter(d=>d.company===co);
+    if(q)list=list.filter(d=>(d.name||'').toLowerCase().includes(q)||(d.manager||'').toLowerCase().includes(q));
+    list.sort((a,b)=>(a.name||'').localeCompare(b.name||'','th'));
+    return{co,label,list};
+  });
+  const totalFiltered=sections.reduce((s,x)=>s+x.list.length,0);
+  // single table — columns always aligned
+  let rowIdx=0;
+  const tbodyRows=sections.map(({co,label,list})=>{
+    const isWarn=co==='__none__';
+    const hdrBg=isWarn?'#fffbeb':'#f0f9ff';
+    const hdrColor=isWarn?'#92400e':'var(--pd)';
+    const sectionHdr=`<tr style="background:${hdrBg}">
+      <td colspan="5" style="padding:10px 14px;font-size:13px;font-weight:700;color:${hdrColor};border-bottom:2px solid ${isWarn?'#fde68a':'var(--pl)'}">
+        🏢 ${esc(label)}
+        <span style="margin-left:8px;background:${isWarn?'#fef3c7':'var(--pl)'};color:${hdrColor};padding:1px 9px;border-radius:20px;font-size:11px;font-weight:600">${list.length} แผนก</span>
+        ${isWarn?`<span style="margin-left:6px;font-size:11px;font-weight:400">— กรุณาแก้ไขเพื่อระบุบริษัท</span>`:''}
+      </td></tr>`;
+    const rows=list.length?list.map(d=>{
+      const cnt=S.emps.filter(e=>e.department===d.name&&e.status==='active').length;
+      return`<tr>
+        <td style="color:#94a3b8;font-size:12px">${++rowIdx}</td>
+        <td><strong style="color:var(--pd)">${esc(d.name)}</strong></td>
+        <td>${d.manager?`<span style="font-weight:600">${esc(d.manager)}</span>`:'-'}</td>
+        <td><span style="background:var(--pl);color:var(--pd);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">${cnt} คน</span></td>
+        <td><div style="display:flex;gap:4px">
+          <button class="btn btn-sm btn-ed" onclick="editDept('${d.id}')">แก้ไข</button>
+          <button class="btn btn-sm btn-del" onclick="confirmDeptDel('${d.id}')">ลบ</button>
+        </div></td>
+      </tr>`;
+    }).join(''):`<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:14px">ยังไม่มีแผนก</td></tr>`;
+    return sectionHdr+rows;
+  }).join('');
+  const tables=totalFiltered||S.depts.length?`<table>
+    <thead><tr><th>#</th><th>ชื่อแผนก</th><th>ผู้จัดการแผนก</th><th>พนักงานปัจจุบัน</th><th>จัดการ</th></tr></thead>
+    <tbody>${tbodyRows}</tbody>
+  </table>`:`<div class="empty"><div class="ei">🔍</div><h3>ไม่พบแผนก</h3></div>`;
+  return`
+<div class="ph">
+  <div><h2>ฐานข้อมูลแผนก</h2><p>แผนกทั้งหมด ${S.depts.length} แผนก</p></div>
+  <button class="btn btn-p" onclick="goPage('dept-form')">+ เพิ่มแผนก</button>
+</div>
+<div class="tbl-card">
+  <div class="tbl-toolbar">
+    <div class="srch"><span style="color:#94a3b8;font-size:14px">🔍</span>
+      <input id="dept-search-inp" type="text" placeholder="ค้นหาชื่อแผนก, ผู้จัดการ..." value="${esc(S.deptSearch)}" oninput="setDeptSearch(this.value)">
+    </div>
+  </div>
+  <div class="tbl-wrap">
+  ${S.depts.length?tables:`<div class="empty"><div class="ei">🏬</div><h3>ยังไม่มีข้อมูลแผนก</h3><p>กดปุ่ม "เพิ่มแผนก" เพื่อเริ่มต้น</p></div>`}
+  </div>
+</div>
+`;
+}
+
+// ── Dept Form ──────────────────────────────────────────────────
+function renderDeptForm(){
+  const isEdit=!!S.deptEditId;
+  const d=isEdit?S.depts.find(x=>x.id===S.deptEditId)||{}:{};
+  return`
+<div class="ph">
+  <div><h2>${isEdit?'แก้ไขข้อมูลแผนก':'เพิ่มแผนกใหม่'}</h2>
+    <p>${isEdit?`แก้ไข: ${esc(d.name||'')}` :'กรอกข้อมูลแผนกให้ครบถ้วน'}</p>
+  </div>
+  <button class="btn btn-g" onclick="goPage('depts')">← กลับ</button>
+</div>
+<form id="df" onsubmit="submitDeptForm(event)">
+<div class="form-card">
+  <div class="fsec">ข้อมูลแผนก</div>
+  <div class="fg2">
+    <div class="fg"><label class="lb">บริษัท <span class="req">*</span></label>
+      <select name="company" required>
+        <option value="">-- เลือกบริษัท --</option>
+        ${COMPANIES.map(c=>`<option value="${esc(c)}"${d.company===c?' selected':''}>${esc(c)}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label class="lb">ชื่อแผนก <span class="req">*</span></label>
+      <input type="text" name="name" value="${esc(d.name||'')}" required placeholder="เช่น ฝ่ายบัญชี, แผนก IT"></div>
+    <div class="fg full"><label class="lb">ผู้จัดการแผนก</label>
+      <input type="text" name="manager" value="${esc(d.manager||'')}" placeholder="ชื่อผู้จัดการแผนก"></div>
+  </div>
+  <div class="form-foot">
+    <button type="button" class="btn btn-g" onclick="goPage('depts')">ยกเลิก</button>
+    <button type="submit" class="btn btn-p">${isEdit?'💾 บันทึกการแก้ไข':'✅ เพิ่มแผนก'}</button>
+  </div>
+</div>
+</form>`;
+}
+
+// ── Setup Modal ────────────────────────────────────────────────
+function renderSetup(){
+  if(!S.showSetup)return'';
+  return`<div class="ov" onclick="closeSetup()"><div class="modal" onclick="event.stopPropagation()" style="max-width:520px">
+  <h3>⚙️ เชื่อมต่อ Google Sheets</h3>
+  <p>วาง URL ของ Google Apps Script Web App เพื่อใช้ Google Sheets เป็นฐานข้อมูล หากไม่กรอก ระบบจะใช้ Local Storage แทน</p>
+  <div class="info-box">
+    <strong>วิธีตั้งค่า:</strong><br>
+    1. เปิด Google Sheets ใหม่<br>
+    2. ไปที่ Extensions → Apps Script<br>
+    3. วางโค้ดจากไฟล์ <code>Code.gs</code> → Save<br>
+    4. Deploy → New deployment → Web app<br>
+    5. Execute as: <code>Me</code> &nbsp;|&nbsp; Access: <code>Anyone</code><br>
+    6. คัดลอก URL มาวางด้านล่าง
+  </div>
+  <div class="fg" style="margin-bottom:4px"><label class="lb">Apps Script Web App URL</label>
+    <input type="text" id="api-inp" value="${esc(S.apiUrl)}" placeholder="https://script.google.com/macros/s/..."></div>
+  <div class="modal-foot">
+    <button class="btn btn-del btn-sm" onclick="clearApi()">ล้างค่า</button>
+    <button class="btn btn-g" onclick="closeSetup()">ยกเลิก</button>
+    <button class="btn btn-p" onclick="saveApi()">บันทึก &amp; เชื่อมต่อ</button>
+  </div>
+</div></div>`;
+}
+
+// ── Render ─────────────────────────────────────────────────────
+function render(){
+  let content='';
+  if(S.loading){content='<div style="padding:60px;text-align:center;color:#64748b">⏳ กำลังโหลดข้อมูล...</div>'}
+  else if(S.page==='dashboard')content=renderDash();
+  else if(S.page==='list')content=renderList();
+  else if(S.page==='form')content=renderForm();
+  else if(S.page==='depts')content=renderDepts();
+  else if(S.page==='dept-form')content=renderDeptForm();
+  const delModal=S.delId?`<div class="ov" onclick="cancelDel()"><div class="modal" onclick="event.stopPropagation()">
+  <h3>⚠️ ยืนยันการลบพนักงาน</h3>
+  <p>ต้องการลบข้อมูลพนักงานนี้ออกจากระบบ?<br>การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+  <div class="modal-foot">
+    <button class="btn btn-g" onclick="cancelDel()">ยกเลิก</button>
+    <button class="btn btn-del" onclick="doDel()">ลบข้อมูล</button>
+  </div>
+</div></div>`:'';
+  const deptDelModal=S.deptDelId?`<div class="ov" onclick="cancelDeptDel()"><div class="modal" onclick="event.stopPropagation()">
+  <h3>⚠️ ยืนยันการลบแผนก</h3>
+  <p>ต้องการลบแผนกนี้ออกจากระบบ?<br>ข้อมูลพนักงานที่อยู่ในแผนกนี้จะยังคงอยู่</p>
+  <div class="modal-foot">
+    <button class="btn btn-g" onclick="cancelDeptDel()">ยกเลิก</button>
+    <button class="btn btn-del" onclick="doDeptDel()">ลบแผนก</button>
+  </div>
+</div></div>`:'';
+  document.getElementById('app').innerHTML=`<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${renderSetup()}${delModal}${deptDelModal}`;
+}
+
+// ── Event Handlers ─────────────────────────────────────────────
+function goPage(p){
+  S.page=p;
+  if(p!=='form')S.editId=null;
+  if(p!=='dept-form')S.deptEditId=null;
+  S.delId=null;S.deptDelId=null;
+  render();window.scrollTo(0,0);
+}
+function setSearch(v){S.search=v;const p=v.length;render();const i=document.getElementById('emp-search-inp');if(i){i.focus();i.setSelectionRange(p,p);}}
+function setFSt(v){S.filterSt=v;render()}
+function setListCompany(v){
+  S.filterCompany=v;
+  // reset dept ถ้าไม่อยู่ในบริษัทที่เลือก
+  if(v!=='all'){
+    const inCo=S.depts.filter(d=>d.company===v).map(d=>d.name);
+    if(S.filterDept!=='all'&&!inCo.includes(S.filterDept))S.filterDept='all';
+  }
+  render();
+}
+function setListDept(v){S.filterDept=v;render()}
+function setListPosition(v){S.filterPosition=v;render()}
+function clearListFilter(){S.filterCompany='all';S.filterDept='all';S.filterPosition='all';render()}
+function setDashYear(v){S.dashYear=parseInt(v);render()}
+function setDashCompany(v){
+  S.dashCompany=v;
+  // ถ้าแผนกที่เลือกอยู่ไม่อยู่ในบริษัทใหม่ ให้ reset แผนก
+  if(v!=='all'){
+    const deptInCo=S.depts.filter(d=>d.company===v).map(d=>d.name);
+    if(S.dashDept!=='all'&&!deptInCo.includes(S.dashDept))S.dashDept='all';
+  }
+  render();
+}
+function setDashDept(v){S.dashDept=v;render()}
+function clearDashFilter(){S.dashCompany='all';S.dashDept='all';render()}
+function toggleRD(v){
+  const wrap=document.getElementById('rd-wrap');
+  const inp=document.getElementById('rd-inp');
+  if(wrap)wrap.style.display=v==='resigned'?'flex':'none';
+  if(inp){inp.required=v==='resigned';if(v!=='resigned')inp.value=''}
+}
+function editEmp(id){S.editId=id;S.page='form';render();window.scrollTo(0,0)}
+function confirmDel(id){S.delId=id;render()}
+function cancelDel(){S.delId=null;render()}
+
+async function doDel(){
+  const id=S.delId;S.delId=null;
+  const ok=await apiPost({action:'delete',id});
+  S.emps=S.emps.filter(e=>e.id!==id);lsave();
+  toast(ok?'ลบข้อมูลสำเร็จ':'ลบแล้ว (Local)',ok?'ok':'');
+  render();
+}
+
+async function submitForm(ev){
+  ev.preventDefault();
+  const fd=new FormData(ev.target);
+  if(fd.get('status')==='resigned'&&!fd.get('resignDate')){
+    toast('กรุณาระบุวันที่ลาออกด้วย','err');
+    document.getElementById('rd-inp')?.focus();return;
+  }
+  const isEdit=!!S.editId;
+  const emp={
+    id:isEdit?S.editId:uid(),
+    empId:fd.get('empId').trim(),
+    fullName:fd.get('fullName').trim(),
+    company:fd.get('company').trim(),
+    department:fd.get('department').trim(),
+    position:fd.get('position').trim(),
+    startDate:fd.get('startDate'),
+    address:fd.get('address').trim(),
+    email:fd.get('email').trim(),
+    supervisor:fd.get('supervisor').trim(),
+    birthDate:fd.get('birthDate')||'',
+    sickLeaveNoDoc:parseInt(fd.get('sickLeaveNoDoc'))||0,
+    sickLeaveWithDoc:parseInt(fd.get('sickLeaveWithDoc'))||0,
+    personalLeave:parseInt(fd.get('personalLeave'))||0,
+    annualLeave:parseInt(fd.get('annualLeave'))||0,
+    baseSalary:parseFloat(fd.get('baseSalary'))||0,
+    positionAllowance:parseFloat(fd.get('positionAllowance'))||0,
+    otherBenefits:parseFloat(fd.get('otherBenefits'))||0,
+    status:fd.get('status'),
+    resignDate:fd.get('resignDate')||'',
+    createdAt:isEdit?(S.emps.find(e=>e.id===S.editId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+  };
+  if(isEdit){const i=S.emps.findIndex(e=>e.id===S.editId);if(i>-1)S.emps[i]=emp}
+  else S.emps.unshift(emp);
+  lsave();
+  const ok=await apiPost({action:isEdit?'update':'create',data:emp});
+  toast(isEdit?'แก้ไขข้อมูลสำเร็จ':'เพิ่มพนักงานสำเร็จ','ok');
+  S.editId=null;S.page='list';render();
+}
+
+// ── Dept handlers ──────────────────────────────────────────────
+function setDeptSearch(v){S.deptSearch=v;const p=v.length;render();const i=document.getElementById('dept-search-inp');if(i){i.focus();i.setSelectionRange(p,p);}}
+function editDept(id){S.deptEditId=id;S.page='dept-form';render();window.scrollTo(0,0)}
+function confirmDeptDel(id){S.deptDelId=id;render()}
+function cancelDeptDel(){S.deptDelId=null;render()}
+async function doDeptDel(){
+  const id=S.deptDelId;S.deptDelId=null;
+  const ok=await apiDeptPost({action:'deleteDept',id});
+  S.depts=S.depts.filter(d=>d.id!==id);dsave();
+  toast(ok?'ลบแผนกสำเร็จ':'ลบแล้ว (Local)',ok?'ok':'');render();
+}
+async function submitDeptForm(ev){
+  ev.preventDefault();
+  const fd=new FormData(ev.target);
+  const isEdit=!!S.deptEditId;
+  const dept={
+    id:isEdit?S.deptEditId:duid(),
+    company:fd.get('company').trim(),
+    name:fd.get('name').trim(),
+    manager:fd.get('manager').trim(),
+    createdAt:isEdit?(S.depts.find(d=>d.id===S.deptEditId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+  };
+  if(isEdit){const i=S.depts.findIndex(d=>d.id===S.deptEditId);if(i>-1)S.depts[i]=dept}
+  else S.depts.push(dept);
+  dsave();
+  await apiDeptPost({action:isEdit?'updateDept':'createDept',data:dept});
+  toast(isEdit?'แก้ไขแผนกสำเร็จ':'เพิ่มแผนกสำเร็จ','ok');
+  S.deptEditId=null;S.page='depts';render();
+}
+function calcTotal(){
+  const b=parseFloat(document.getElementById('sal-base')?.value)||0;
+  const p=parseFloat(document.getElementById('sal-pos')?.value)||0;
+  const o=parseFloat(document.getElementById('sal-other')?.value)||0;
+  const t=document.getElementById('sal-total');
+  if(t)t.value=(b+p+o)>0?(b+p+o).toLocaleString('th-TH'):'';
+}
+function onFormCompanyChange(company){
+  const deptSel=document.getElementById('dept-sel');
+  const supInp=document.getElementById('supervisor-inp');
+  if(!deptSel)return;
+  const depts=[...S.depts].filter(d=>!company||d.company===company)
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||'','th'));
+  deptSel.innerHTML='<option value="">-- เลือกแผนก --</option>'+
+    depts.map(d=>`<option value="${esc(d.name)}">${esc(d.name)}</option>`).join('');
+  if(supInp)supInp.value='';
+}
+function fillSupervisor(deptName){
+  const companySel=document.getElementById('company-sel');
+  const company=companySel?companySel.value:'';
+  const dept=S.depts.find(d=>d.name===deptName&&(!company||d.company===company));
+  const inp=document.getElementById('supervisor-inp');
+  if(inp)inp.value=dept?(dept.manager||''):'';
+}
+
+function openSetup(){S.showSetup=true;render()}
+function closeSetup(){S.showSetup=false;render()}
+async function saveApi(){
+  const url=document.getElementById('api-inp').value.trim();
+  S.apiUrl=url;localStorage.setItem('hrm_api',url);
+  S.showSetup=false;
+  if(url){toast('กำลังเชื่อมต่อ...');const ok=await apiFetch();toast(ok?'เชื่อมต่อ Google Sheets สำเร็จ!':'เชื่อมต่อไม่สำเร็จ ใช้ข้อมูล Local แทน',ok?'ok':'err')}
+  render();
+}
+function clearApi(){S.apiUrl='';S.connected=false;localStorage.removeItem('hrm_api');S.showSetup=false;toast('ล้างการเชื่อมต่อแล้ว');render()}
+async function loadData(){if(S.apiUrl){S.loading=true;render();await apiFetch();S.loading=false}render();toast('โหลดข้อมูลแล้ว','ok')}
+
+// ── Init ───────────────────────────────────────────────────────
+S.emps=lload();
+S.depts=dload();
+render();
+if(S.apiUrl){
+  Promise.all([apiFetch(),apiDeptFetch()]).then(()=>render());
+}
+</script>
+</body>
+</html>
