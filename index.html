@@ -669,15 +669,17 @@ function renderDepts(){
     const hdrBg=isWarn?'#fffbeb':'#f0f9ff';
     const hdrColor=isWarn?'#92400e':'var(--pd)';
     const sectionHdr=`<tr style="background:${hdrBg}">
-      <td colspan="5" style="padding:10px 14px;font-size:13px;font-weight:700;color:${hdrColor};border-bottom:2px solid ${isWarn?'#fde68a':'var(--pl)'}">
+      <td colspan="6" style="padding:10px 14px;font-size:13px;font-weight:700;color:${hdrColor};border-bottom:2px solid ${isWarn?'#fde68a':'var(--pl)'}">
         🏢 ${esc(label)}
         <span style="margin-left:8px;background:${isWarn?'#fef3c7':'var(--pl)'};color:${hdrColor};padding:1px 9px;border-radius:20px;font-size:11px;font-weight:600">${list.length} แผนก</span>
         ${isWarn?`<span style="margin-left:6px;font-size:11px;font-weight:400">— กรุณาแก้ไขเพื่อระบุบริษัท</span>`:''}
       </td></tr>`;
     const rows=list.length?list.map(d=>{
       const cnt=S.emps.filter(e=>e.department===d.name&&e.status==='active').length;
+      const coShort=d.company?d.company.replace('บริษัท ','').replace(' จำกัด',''):'-';
       return`<tr>
         <td style="color:#94a3b8;font-size:12px">${++rowIdx}</td>
+        <td style="font-size:12px;color:var(--muted)">${esc(coShort)}</td>
         <td><strong style="color:var(--pd)">${esc(d.name)}</strong></td>
         <td>${d.manager?`<span style="font-weight:600">${esc(d.manager)}</span>`:'-'}</td>
         <td><span style="background:var(--pl);color:var(--pd);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">${cnt} คน</span></td>
@@ -686,11 +688,11 @@ function renderDepts(){
           <button class="btn btn-sm btn-del" onclick="confirmDeptDel('${d.id}')">ลบ</button>
         </div></td>
       </tr>`;
-    }).join(''):`<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:14px">ยังไม่มีแผนก</td></tr>`;
+    }).join(''):`<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:14px">ยังไม่มีแผนก</td></tr>`;
     return sectionHdr+rows;
   }).join('');
   const tables=totalFiltered||S.depts.length?`<table>
-    <thead><tr><th>#</th><th>ชื่อแผนก</th><th>ผู้จัดการแผนก</th><th>พนักงานปัจจุบัน</th><th>จัดการ</th></tr></thead>
+    <thead><tr><th>#</th><th>บริษัท</th><th>ชื่อแผนก</th><th>ผู้จัดการแผนก</th><th>พนักงานปัจจุบัน</th><th>จัดการ</th></tr></thead>
     <tbody>${tbodyRows}</tbody>
   </table>`:`<div class="empty"><div class="ei">🔍</div><h3>ไม่พบแผนก</h3></div>`;
   return`
