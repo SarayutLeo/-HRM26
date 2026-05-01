@@ -168,6 +168,7 @@ const S={
   loading:false,
   showSetup:false,
   delId:null,
+  localBackup:null,
 };
 
 // ── Storage ────────────────────────────────────────────────────
@@ -762,7 +763,7 @@ function renderSetup(){
     <button class="btn btn-del btn-sm" onclick="clearApi()">ล้างค่า</button>
     <button class="btn btn-g" onclick="closeSetup()">ยกเลิก</button>
     <button class="btn btn-p" onclick="saveApi()">บันทึก &amp; เชื่อมต่อ</button>
-    ${S.apiUrl&&S.connected&&(S.emps.length||S.depts.length)?`<button class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none" onclick="syncLocalToSheets()">☁️ อัพโหลด Local → Sheets</button>`:''}
+    ${S.apiUrl&&S.connected&&S.localBackup&&(S.localBackup.emps.length||S.localBackup.depts.length)?`<button class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font:13px 'Sarabun',sans-serif" onclick="syncLocalToSheets()">☁️ อัพโหลด Local → Sheets (${(S.localBackup.emps.length||0)+(S.localBackup.depts.length||0)} รายการ)</button>`:''}
   </div>
 </div></div>`;
 }
@@ -946,6 +947,9 @@ function openSetup(){S.showSetup=true;render()}
 function closeSetup(){S.showSetup=false;render()}
 async function saveApi(){
   const url=document.getElementById('api-inp').value.trim();
+  if(url&&(S.emps.length||S.depts.length)){
+    S.localBackup={emps:[...S.emps],depts:[...S.depts]};
+  }
   S.apiUrl=url;localStorage.setItem('hrm_api',url);
   S.showSetup=false;
   if(url){toast('กำลังเชื่อมต่อ...');const ok=await apiFetch();toast(ok?'เชื่อมต่อ Google Sheets สำเร็จ!':'เชื่อมต่อไม่สำเร็จ ใช้ข้อมูล Local แทน',ok?'ok':'err')}
@@ -955,12 +959,13 @@ function clearApi(){S.apiUrl='';S.connected=false;localStorage.removeItem('hrm_a
 async function loadData(){if(S.apiUrl){S.loading=true;render();await apiFetch();S.loading=false}render();toast('โหลดข้อมูลแล้ว','ok')}
 async function syncLocalToSheets(){
   if(!S.apiUrl||!S.connected){toast('กรุณาเชื่อมต่อ Google Sheets ก่อน','err');return}
-  const emps=[...S.emps];const depts=[...S.depts];
-  if(!emps.length&&!depts.length){toast('ไม่มีข้อมูล Local ที่จะอัพโหลด','err');return}
+  if(!S.localBackup||(!(S.localBackup.emps.length)&&!(S.localBackup.depts.length))){toast('ไม่มีข้อมูล Local ที่จะอัพโหลด','err');return}
   S.showSetup=false;S.loading=true;render();
   let ok=0;let fail=0;
-  for(const d of depts){try{await apiDeptPost({action:'createDept',data:d});ok++}catch{fail++}}
-  for(const e of emps){try{await apiPost({action:'create',data:e});ok++}catch{fail++}}
+  for(const d of S.localBackup.depts){try{await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action:'createDept',data:d})});ok++}catch{fail++}}
+  for(const e of S.localBackup.emps){try{await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action:'create',data:e})});ok++}catch{fail++}}
+  S.localBackup=null;
+  await Promise.all([apiFetch(),apiDeptFetch()]);
   S.loading=false;
   toast(fail===0?`อัพโหลดสำเร็จ ${ok} รายการ`:`สำเร็จ ${ok}, ล้มเหลว ${fail} รายการ`,fail===0?'ok':'err');
   render();
