@@ -754,10 +754,15 @@ function renderSetup(){
   </div>
   <div class="fg" style="margin-bottom:4px"><label class="lb">Apps Script Web App URL</label>
     <input type="text" id="api-inp" value="${esc(S.apiUrl)}" placeholder="https://script.google.com/macros/s/..."></div>
-  <div class="modal-foot">
+  ${S.emps.length||S.depts.length?`<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px;font-size:12px;color:#92400e;margin-bottom:4px">
+    ⚠️ พบข้อมูล Local: พนักงาน <strong>${S.emps.length}</strong> คน, แผนก <strong>${S.depts.length}</strong> แผนก<br>
+    หากเชื่อมต่อแล้ว ให้กด <strong>"อัพโหลด Local → Sheets"</strong> เพื่อย้ายข้อมูลขึ้น Google Sheets
+  </div>`:''}
+  <div class="modal-foot" style="flex-wrap:wrap;gap:8px">
     <button class="btn btn-del btn-sm" onclick="clearApi()">ล้างค่า</button>
     <button class="btn btn-g" onclick="closeSetup()">ยกเลิก</button>
     <button class="btn btn-p" onclick="saveApi()">บันทึก &amp; เชื่อมต่อ</button>
+    ${S.apiUrl&&S.connected&&(S.emps.length||S.depts.length)?`<button class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none" onclick="syncLocalToSheets()">☁️ อัพโหลด Local → Sheets</button>`:''}
   </div>
 </div></div>`;
 }
@@ -948,6 +953,18 @@ async function saveApi(){
 }
 function clearApi(){S.apiUrl='';S.connected=false;localStorage.removeItem('hrm_api');S.showSetup=false;toast('ล้างการเชื่อมต่อแล้ว');render()}
 async function loadData(){if(S.apiUrl){S.loading=true;render();await apiFetch();S.loading=false}render();toast('โหลดข้อมูลแล้ว','ok')}
+async function syncLocalToSheets(){
+  if(!S.apiUrl||!S.connected){toast('กรุณาเชื่อมต่อ Google Sheets ก่อน','err');return}
+  const emps=[...S.emps];const depts=[...S.depts];
+  if(!emps.length&&!depts.length){toast('ไม่มีข้อมูล Local ที่จะอัพโหลด','err');return}
+  S.showSetup=false;S.loading=true;render();
+  let ok=0;let fail=0;
+  for(const d of depts){try{await apiDeptPost({action:'createDept',data:d});ok++}catch{fail++}}
+  for(const e of emps){try{await apiPost({action:'create',data:e});ok++}catch{fail++}}
+  S.loading=false;
+  toast(fail===0?`อัพโหลดสำเร็จ ${ok} รายการ`:`สำเร็จ ${ok}, ล้มเหลว ${fail} รายการ`,fail===0?'ok':'err');
+  render();
+}
 
 // ── Init ───────────────────────────────────────────────────────
 S.emps=lload();
