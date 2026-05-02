@@ -11,15 +11,17 @@
 // ── Sheet: พนักงาน ─────────────────────────────────────────────
 const SHEET_EMP  = 'พนักงาน';
 const EMP_HEADERS = [
-  'id', 'empId', 'fullName', 'company', 'department', 'position',
-  'startDate', 'address', 'email', 'supervisor',
+  'id', 'empId', 'fullName', 'nickname', 'company', 'department', 'position',
+  'startDate', 'birthDate', 'address', 'email', 'supervisor',
   'sickLeaveNoDoc', 'sickLeaveWithDoc', 'personalLeave', 'annualLeave',
+  'baseSalary', 'positionAllowance', 'otherBenefits',
   'status', 'resignDate', 'createdAt', 'updatedAt'
 ];
 const EMP_LABELS = [
-  'ID (ระบบ)', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'บริษัท', 'แผนก', 'ตำแหน่ง',
-  'วันที่เริ่มงาน', 'ที่อยู่', 'อีเมล', 'ผู้บังคับบัญชา',
+  'ID (ระบบ)', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'บริษัท', 'แผนก', 'ตำแหน่ง',
+  'วันที่เริ่มงาน', 'วันเกิด', 'ที่อยู่', 'อีเมล', 'ผู้บังคับบัญชา',
   'ลาป่วย(ไม่มีใบ)', 'ลาป่วย(มีใบ)', 'ลากิจ', 'ลาพักร้อน',
+  'เงินเดือนฐาน', 'ค่าตำแหน่ง', 'สวัสดิการอื่น',
   'สถานะ', 'วันที่ลาออก', 'วันที่สร้าง', 'วันที่แก้ไข'
 ];
 
@@ -46,12 +48,59 @@ function initSheet(name, labels, widths) {
   return sheet;
 }
 
-function getEmpSheet()  { return initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,140,120,130,110,200,160,150,100,100,80,90,120,110,160,160]); }
-function getDeptSheet() { return initSheet(SHEET_DEPT, DEPT_LABELS, [140,200,160,160,160,160,160]); }
+// ตรวจสอบและแทรกคอลัมน์ที่หายไปโดยไม่ทำลายข้อมูลเดิม
+function ensureColumns(sheet, labels) {
+  const lastCol = sheet.getLastColumn();
+  if (lastCol < 1) return;
+  const cur = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  for (let i = 0; i < labels.length; i++) {
+    if (cur[i] === labels[i]) continue;
+    if (cur.indexOf(labels[i]) !== -1) continue; // มีอยู่แล้วแต่ตำแหน่งต่างกัน — ข้าม
+    // แทรกคอลัมน์ใหม่ที่ตำแหน่ง i+1
+    const pos = i + 1;
+    if (pos <= sheet.getLastColumn()) {
+      sheet.insertColumnBefore(pos);
+    } else {
+      sheet.insertColumnAfter(sheet.getLastColumn());
+    }
+    const hdr = sheet.getRange(1, pos);
+    hdr.setValue(labels[i]);
+    hdr.setFontWeight('bold');
+    hdr.setBackground('#0284c7');
+    hdr.setFontColor('#ffffff');
+    hdr.setHorizontalAlignment('center');
+    cur.splice(i, 0, labels[i]);
+  }
+}
+
+function getEmpSheet()  {
+  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,90,140,120,130,110,100,200,160,150,100,100,80,90,110,110,110,120,110,160,160]);
+  ensureColumns(s, EMP_LABELS);
+  return s;
+}
+function getDeptSheet() {
+  const s = initSheet(SHEET_DEPT, DEPT_LABELS, [140,200,160,160,160,160,160]);
+  ensureColumns(s, DEPT_LABELS);
+  return s;
+}
 
 function rowToObj(headers, row) {
   const obj = {};
-  headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? String(row[i]) : ''; });
+  headers.forEach((h, i) => {
+    const v = row[i];
+    if (v instanceof Date) {
+      if (isNaN(v.getTime())) {
+        obj[h] = '';
+      } else {
+        const y = v.getFullYear();
+        const mo = String(v.getMonth() + 1).padStart(2, '0');
+        const d  = String(v.getDate()).padStart(2, '0');
+        obj[h] = y + '-' + mo + '-' + d;
+      }
+    } else {
+      obj[h] = (v !== undefined && v !== null) ? String(v) : '';
+    }
+  });
   return obj;
 }
 function objToRow(headers, obj) {

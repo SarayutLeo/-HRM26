@@ -225,13 +225,24 @@ async function apiDeptPost(body){
 function uid(){return'E'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase()}
 function duid(){return'D'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase()}
 function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function pdate(s){
+  if(!s)return null;
+  const str=String(s).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(str)){const d=new Date(str.substring(0,10)+'T00:00:00');return isNaN(d)?null:d}
+  const dmy=str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(dmy){const d=new Date(`${dmy[3]}-${dmy[2].padStart(2,'0')}-${dmy[1].padStart(2,'0')}T00:00:00`);return isNaN(d)?null:d}
+  const d=new Date(str);return isNaN(d)?null:d;
+}
 function fdate(d){
   if(!d)return'-';
-  const dt=new Date(d+'T00:00:00');
-  if(isNaN(dt))return d;
-  return dt.toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric'})
+  const dt=pdate(d);if(!dt)return String(d);
+  return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
 }
-function pdate(s){if(!s)return null;const d=new Date(s+'T00:00:00');return isNaN(d)?null:d}
+function toInputDate(d){
+  if(!d)return'';
+  const dt=pdate(d);if(!dt)return'';
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
 function calcAge(birthDate){
   const b=pdate(birthDate);if(!b)return'-';
   const t=new Date();
@@ -241,8 +252,9 @@ function calcAge(birthDate){
 }
 function tenure(startDate,endDate){
   const s=pdate(startDate);if(!s)return'-';
-  const e=endDate?pdate(endDate):new Date();
-  if(!e||e<s)return'-';
+  const eRaw=endDate?pdate(endDate):new Date();
+  if(!eRaw||eRaw<s)return'-';
+  const e=new Date(eRaw.getTime()+86400000); // +1 วัน (นับวันเริ่มงานด้วย)
   let y=e.getFullYear()-s.getFullYear();
   let m=e.getMonth()-s.getMonth();
   let d=e.getDate()-s.getDate();
@@ -437,7 +449,7 @@ function renderDash(){
 function renderList(){
   let baseEmps=[...S.emps];
   const q=S.search.toLowerCase();
-  if(q)baseEmps=baseEmps.filter(e=>[e.fullName,e.empId,e.department,e.position,e.company].some(v=>(v||'').toLowerCase().includes(q)));
+  if(q)baseEmps=baseEmps.filter(e=>[e.fullName,e.nickname,e.empId,e.department,e.position,e.company].some(v=>(v||'').toLowerCase().includes(q)));
   if(S.filterCompany!=='all')baseEmps=baseEmps.filter(e=>e.company===S.filterCompany);
   if(S.filterDept!=='all')baseEmps=baseEmps.filter(e=>e.department===S.filterDept);
   if(S.filterPosition!=='all')baseEmps=baseEmps.filter(e=>e.position===S.filterPosition);
@@ -516,7 +528,7 @@ function renderList(){
     <tbody>${emps.map((e,i)=>{const grey=e.status==='resigned';return`<tr style="${grey?'color:#94a3b8':''}">
       <td style="color:#cbd5e1;font-size:12px">${i+1}</td>
       <td><span class="ecode" style="${grey?'background:#f1f5f9;color:#94a3b8':''}">${esc(e.empId)}</span></td>
-      <td><span style="${grey?'':'font-weight:600'}">${esc(e.fullName)}</span><br><span style="font-size:11px;color:${grey?'#cbd5e1':'#64748b'}">${esc(e.email||'')}</span></td>
+      <td><span style="${grey?'':'font-weight:600'}">${esc(e.fullName)}</span>${e.nickname?`<span style="font-size:12px;color:${grey?'#cbd5e1':'#64748b'}"> (${esc(e.nickname)})</span>`:''}<br><span style="font-size:11px;color:${grey?'#cbd5e1':'#64748b'}">${esc(e.email||'')}</span></td>
       <td style="text-align:center;font-size:13px">${calcAge(e.birthDate)}</td>
       <td>${esc(e.company||'-')}</td>
       <td>${esc(e.department||'-')}</td>
@@ -556,6 +568,8 @@ function renderForm(){
       <input type="text" name="empId" value="${esc(e.empId||sugId)}" required placeholder="เช่น EMP0001"></div>
     <div class="fg"><label class="lb">ชื่อ-นามสกุล <span class="req">*</span></label>
       <input type="text" name="fullName" value="${esc(e.fullName||'')}" required placeholder="ชื่อ-นามสกุล"></div>
+    <div class="fg"><label class="lb">ชื่อเล่น</label>
+      <input type="text" name="nickname" value="${esc(e.nickname||'')}" placeholder="ชื่อเล่น"></div>
     <div class="fg"><label class="lb">บริษัท <span class="req">*</span></label>
       <select name="company" id="company-sel" onchange="onFormCompanyChange(this.value)" required>
         <option value="">-- เลือกบริษัท --</option>
@@ -579,9 +593,9 @@ function renderForm(){
     <div class="fg"><label class="lb">อีเมล</label>
       <input type="email" name="email" value="${esc(e.email||'')}" placeholder="email@company.com"></div>
     <div class="fg"><label class="lb">วันเกิด</label>
-      <input type="date" name="birthDate" value="${esc(e.birthDate||'')}"></div>
+      <input type="date" name="birthDate" value="${esc(toInputDate(e.birthDate))}"></div>
     <div class="fg"><label class="lb">วันที่เริ่มงาน <span class="req">*</span></label>
-      <input type="date" name="startDate" value="${esc(e.startDate||'')}" required></div>
+      <input type="date" name="startDate" value="${esc(toInputDate(e.startDate))}" required></div>
     <div class="fg full"><label class="lb">ที่อยู่</label>
       <textarea name="address" placeholder="ที่อยู่ปัจจุบัน">${esc(e.address||'')}</textarea></div>
   </div>
@@ -619,7 +633,7 @@ function renderForm(){
       </select>
     </div>
     <div class="fg" id="rd-wrap" style="display:${e.status==='resigned'?'flex':'none'}"><label class="lb">วันที่ลาออก <span class="req">*</span></label>
-      <input type="date" name="resignDate" id="rd-inp" value="${esc(e.resignDate||'')}" ${e.status==='resigned'?'required':''}></div>
+      <input type="date" name="resignDate" id="rd-inp" value="${esc(toInputDate(e.resignDate))}" ${e.status==='resigned'?'required':''}></div>
   </div>
 
   <div class="form-foot">
@@ -773,7 +787,7 @@ function renderSetup(){
     <button class="btn btn-del btn-sm" onclick="clearApi()">ล้างค่า</button>
     <button class="btn btn-g" onclick="closeSetup()">ยกเลิก</button>
     <button class="btn btn-p" onclick="saveApi()">บันทึก &amp; เชื่อมต่อ</button>
-    ${S.apiUrl&&S.connected&&S.localBackup&&(S.localBackup.emps.length||S.localBackup.depts.length)?`<button class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font:13px 'Sarabun',sans-serif" onclick="syncLocalToSheets()">☁️ อัพโหลด Local → Sheets (${(S.localBackup.emps.length||0)+(S.localBackup.depts.length||0)} รายการ)</button>`:''}
+    ${S.apiUrl&&S.connected&&(S.emps.length||S.depts.length)?`<button class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font:13px 'Sarabun',sans-serif" onclick="syncLocalToSheets()">☁️ อัพโหลดข้อมูลขึ้น Sheets (${S.emps.length} พนักงาน, ${S.depts.length} แผนก)</button>`:''}
   </div>
 </div></div>`;
 }
@@ -870,6 +884,7 @@ async function submitForm(ev){
     id:isEdit?S.editId:uid(),
     empId:fd.get('empId').trim(),
     fullName:fd.get('fullName').trim(),
+    nickname:fd.get('nickname').trim(),
     company:fd.get('company').trim(),
     department:fd.get('department').trim(),
     position:fd.get('position').trim(),
@@ -971,11 +986,27 @@ function clearApi(){S.apiUrl='';S.connected=false;localStorage.removeItem('hrm_a
 async function loadData(){if(S.apiUrl){S.loading=true;render();await apiFetch();S.loading=false}render();toast('โหลดข้อมูลแล้ว','ok')}
 async function syncLocalToSheets(){
   if(!S.apiUrl||!S.connected){toast('กรุณาเชื่อมต่อ Google Sheets ก่อน','err');return}
-  if(!S.localBackup||(!(S.localBackup.emps.length)&&!(S.localBackup.depts.length))){toast('ไม่มีข้อมูล Local ที่จะอัพโหลด','err');return}
+  if(!S.emps.length&&!S.depts.length){toast('ไม่มีข้อมูลที่จะอัพโหลด','err');return}
   S.showSetup=false;S.loading=true;render();
-  let ok=0;let fail=0;
-  for(const d of S.localBackup.depts){try{await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action:'createDept',data:d})});ok++}catch{fail++}}
-  for(const e of S.localBackup.emps){try{await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action:'create',data:e})});ok++}catch{fail++}}
+  // ดึง ID ที่มีอยู่ใน Sheets แล้ว เพื่อ update แทน create (ป้องกัน duplicate)
+  const sheetsEmpIds=new Set(),sheetsDeptIds=new Set();
+  try{
+    const re=await fetch(S.apiUrl+'?action=list',{redirect:'follow'});
+    const de=JSON.parse(await re.text());
+    if(de.success)de.data.forEach(e=>sheetsEmpIds.add(e.id));
+    const rd=await fetch(S.apiUrl+'?action=listDepts',{redirect:'follow'});
+    const dd=JSON.parse(await rd.text());
+    if(dd.success)dd.data.forEach(d=>sheetsDeptIds.add(d.id));
+  }catch{}
+  let ok=0,fail=0;
+  for(const d of S.depts){
+    const action=sheetsDeptIds.has(d.id)?'updateDept':'createDept';
+    try{const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action,data:d})});const resp=JSON.parse(await r.text());if(resp.success)ok++;else fail++}catch{fail++}
+  }
+  for(const e of S.emps){
+    const action=sheetsEmpIds.has(e.id)?'update':'create';
+    try{const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action,data:e})});const resp=JSON.parse(await r.text());if(resp.success)ok++;else fail++}catch{fail++}
+  }
   S.localBackup=null;backupClear();
   await Promise.all([apiFetch(),apiDeptFetch()]);
   S.loading=false;
