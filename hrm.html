@@ -652,7 +652,7 @@ function renderDepts(){
   function deptTable(list,idx0){
     if(!list.length)return`<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px">ยังไม่มีแผนก</td></tr>`;
     return list.map((d,i)=>{
-      const cnt=S.emps.filter(e=>e.department===d.name&&e.status==='active').length;
+      const cnt=S.emps.filter(e=>e.department===d.name&&e.company===d.company&&e.status==='active').length;
       return`<tr>
         <td style="color:#94a3b8;font-size:12px">${idx0+i+1}</td>
         <td><strong style="color:var(--pd)">${esc(d.name)}</strong></td>
@@ -688,7 +688,7 @@ function renderDepts(){
         ${isWarn?`<span style="margin-left:6px;font-size:11px;font-weight:400">— กรุณาแก้ไขเพื่อระบุบริษัท</span>`:''}
       </td></tr>`;
     const rows=list.length?list.map(d=>{
-      const cnt=S.emps.filter(e=>e.department===d.name&&e.status==='active').length;
+      const cnt=S.emps.filter(e=>e.department===d.name&&e.company===d.company&&e.status==='active').length;
       const coShort=d.company?d.company.replace('บริษัท ','').replace(' จำกัด',''):'-';
       return`<tr>
         <td style="color:#94a3b8;font-size:12px">${++rowIdx}</td>
