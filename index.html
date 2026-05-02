@@ -145,6 +145,8 @@ textarea{resize:vertical;min-height:72px}
 // ── Constants ──────────────────────────────────────────────────
 const MTH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const COMPANIES=['บริษัท เคมเทค อินโนเวชั่น จำกัด','บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด'];
+// ── App Config — URL ฝังตรงนี้ ใช้ได้ทุกเครื่อง ─────────────────
+const APP_CONFIG={apiUrl:'https://script.google.com/macros/s/AKfycbwmZGMZwCr18U5kVY9lSn9P4XJH0HcGLkNN42YnCTgeUx9N4Y0WBexmQK7Xl5zNDkrG/exec'};
 
 // ── State ──────────────────────────────────────────────────────
 const S={
@@ -163,7 +165,7 @@ const S={
   deptEditId:null,
   deptDelId:null,
   deptSearch:'',
-  apiUrl:localStorage.getItem('hrm_api')||'',
+  apiUrl:localStorage.getItem('hrm_api')||APP_CONFIG.apiUrl,
   connected:false,
   loading:false,
   showSetup:false,
