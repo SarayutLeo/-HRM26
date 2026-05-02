@@ -121,21 +121,61 @@ textarea{resize:vertical;min-height:72px}
 .empty p{font-size:13px}
 /* ── Emp code ── */
 .ecode{font-family:monospace;font-size:12px;color:var(--p);font-weight:700;background:var(--pll);padding:2px 7px;border-radius:5px}
+/* ── Mobile Header ── */
+.mob-header{display:none;position:fixed;top:0;left:0;right:0;height:54px;background:var(--sb);z-index:150;align-items:center;padding:0 14px;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.ham{background:none;border:none;cursor:pointer;padding:8px;color:#94a3b8;font-size:18px;line-height:1;border-radius:6px;display:flex;align-items:center}
+.ham:active{background:rgba(255,255,255,.1)}
+.mh-logo{flex:1;font-size:14px;font-weight:700;color:#fff}
+/* ── Mobile Overlay ── */
+.mob-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:105}
+.mob-ov.open{display:block}
+/* ── Bottom Nav ── */
+.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sb);border-top:1px solid rgba(255,255,255,.07);z-index:150}
+.bn-items{display:flex}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px 10px;cursor:pointer;color:var(--sbt);font-size:10px;font-weight:500;transition:color .15s;border:none;background:none;font-family:'Sarabun',sans-serif;-webkit-tap-highlight-color:transparent}
+.bn-item .bi{font-size:22px;line-height:1.3;display:block}
+.bn-item.active{color:#38bdf8}
 /* ── Responsive ── */
-@media(max-width:900px){
+@media(max-width:1023px){
+  .sidebar{width:58px}
+  .sb-logo{padding:14px 0;display:flex;justify-content:center;align-items:center}
+  .sb-logo .li{margin:0;font-size:22px}
+  .sb-logo h1,.sb-logo p,.ni span:not(.ico),.nav-sec,.conn-lbl{display:none}
+  .main{margin-left:58px;padding:22px 24px}
   .stats{grid-template-columns:repeat(2,1fr)}
   .fg3{grid-template-columns:1fr 1fr}
 }
-@media(max-width:700px){
-  .sidebar{width:58px}
-  .sb-logo h1,.sb-logo p,.ni span:not(.ico),.nav-sec,.conn-lbl{display:none}
-  .main{margin-left:58px;padding:16px}
+@media(max-width:767px){
+  .sidebar{width:240px;transform:translateX(-100%);transition:transform .25s ease;z-index:110}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar.open .sb-logo{padding:20px 18px;display:flex;flex-direction:column;align-items:flex-start}
+  .sidebar.open .sb-logo .li{font-size:26px;margin-bottom:6px}
+  .sidebar.open .sb-logo h1,.sidebar.open .sb-logo p{display:block}
+  .sidebar.open .ni span:not(.ico),.sidebar.open .nav-sec,.sidebar.open .conn-lbl{display:block}
+  .mob-header{display:flex}
+  .bot-nav{display:block}
+  .main{margin-left:0;padding:70px 14px 76px}
   .ph{flex-direction:column;gap:10px}
-  .fg2{grid-template-columns:1fr}
+  .ph h2{font-size:18px}
+  .ph-actions{width:100%;flex-wrap:wrap;gap:6px}
+  .stats{grid-template-columns:1fr 1fr}
+  .fg2,.fg3{grid-template-columns:1fr}
+  .modal{max-height:90vh;overflow-y:auto;padding:18px}
+  .modal-foot{flex-wrap:wrap;gap:8px}
+  .tbl-toolbar{padding:10px 12px}
+  .srch{max-width:none;min-width:0;flex:1}
+  .chips{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  select.yr{font-size:12px;padding:5px 8px}
+  .form-foot{flex-wrap:wrap;gap:8px}
 }
 @media(max-width:480px){
+  .main{padding:62px 10px 72px}
+  .sc{padding:14px 12px;gap:10px}
+  .sc-ic{width:38px;height:38px;font-size:16px}
+  .sc-info h3{font-size:22px}
+  .ph h2{font-size:16px}
+  .form-card{padding:16px}
   .stats{grid-template-columns:1fr 1fr}
-  .fg3{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -171,6 +211,7 @@ const S={
   showSetup:false,
   delId:null,
   localBackup:null,
+  menuOpen:false,
 };
 
 // ── Storage ────────────────────────────────────────────────────
@@ -322,7 +363,7 @@ function renderSidebar(){
     {id:'form',ico:'➕',lbl:'เพิ่มพนักงาน'},
     {id:'depts',ico:'🏬',lbl:'ฐานข้อมูลแผนก'},
   ];
-  return`<nav class="sidebar">
+  return`<nav class="sidebar${S.menuOpen?' open':''}">
   <div class="sb-logo"><div class="li">🏢</div><h1>HRM System</h1><p>ระบบจัดการพนักงาน</p></div>
   <div class="sb-nav">
     <div class="nav-sec">เมนูหลัก</div>
@@ -821,17 +862,23 @@ function render(){
     <button class="btn btn-del" onclick="doDeptDel()">ลบแผนก</button>
   </div>
 </div></div>`:'';
-  document.getElementById('app').innerHTML=`<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${renderSetup()}${delModal}${deptDelModal}`;
+  const mobHeader=`<div class="mob-header"><button class="ham" onclick="toggleMenu()">☰</button><div class="mh-logo">🏢 HRM System</div><div class="dot ${S.apiUrl&&S.connected?'on':'off'}" style="margin-right:4px"></div><button class="ham" onclick="openSetup()" style="font-size:16px">⚙️</button></div>`;
+  const mobOv=`<div class="mob-ov${S.menuOpen?' open':''}" onclick="closeMenu()"></div>`;
+  const botNav=`<nav class="bot-nav"><div class="bn-items"><button class="bn-item${S.page==='dashboard'?' active':''}" onclick="goPage('dashboard')"><span class="bi">📊</span><span>ภาพรวม</span></button><button class="bn-item${S.page==='list'?' active':''}" onclick="goPage('list')"><span class="bi">👥</span><span>พนักงาน</span></button><button class="bn-item${S.page==='form'?' active':''}" onclick="goPage('form')"><span class="bi">➕</span><span>เพิ่ม</span></button><button class="bn-item${['depts','dept-form'].includes(S.page)?' active':''}" onclick="goPage('depts')"><span class="bi">🏬</span><span>แผนก</span></button></div></nav>`;
+  document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${delModal}${deptDelModal}`;
 }
 
 // ── Event Handlers ─────────────────────────────────────────────
 function goPage(p){
   S.page=p;
+  S.menuOpen=false;
   if(p!=='form')S.editId=null;
   if(p!=='dept-form')S.deptEditId=null;
   S.delId=null;S.deptDelId=null;
   render();window.scrollTo(0,0);
 }
+function toggleMenu(){S.menuOpen=!S.menuOpen;render()}
+function closeMenu(){S.menuOpen=false;render()}
 function setSearch(v){S.search=v;const p=v.length;render();const i=document.getElementById('emp-search-inp');if(i){i.focus();i.setSelectionRange(p,p);}}
 function setFSt(v){S.filterSt=v;render()}
 function setListCompany(v){
@@ -976,7 +1023,7 @@ function fillSupervisor(deptName){
   if(inp)inp.value=dept?(dept.manager||''):'';
 }
 
-function openSetup(){S.showSetup=true;render()}
+function openSetup(){S.showSetup=true;S.menuOpen=false;render()}
 function closeSetup(){S.showSetup=false;render()}
 async function saveApi(){
   const url=document.getElementById('api-inp').value.trim();
