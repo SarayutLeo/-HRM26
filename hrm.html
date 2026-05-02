@@ -536,10 +536,7 @@ function renderList(){
       <td><span style="font-size:12px;color:${e.status==='active'?'#0369a1':'#64748b'};font-weight:600">${tenure(e.startDate,e.status==='resigned'?e.resignDate:null)}</span>${e.status==='resigned'?'<br><span style="font-size:10px;color:#94a3b8">ถึงวันลาออก</span>':''}</td>
       <td>${esc(e.supervisor||'-')}</td>
       <td><span class="badge ${e.status==='active'?'ba':'br'}">${e.status==='active'?'พนักงานปัจจุบัน':'ลาออกแล้ว'}</span>${e.status==='resigned'&&e.resignDate?`<br><span style="font-size:11px;color:#94a3b8">${fdate(e.resignDate)}</span>`:''}</td>
-      <td><div style="display:flex;gap:4px">
-        <button class="btn btn-sm btn-ed" onclick="editEmp('${e.id}')">แก้ไข</button>
-        <button class="btn btn-sm btn-del" onclick="confirmDel('${e.id}')">ลบ</button>
-      </div></td>
+      <td><button class="btn btn-sm btn-ed" onclick="editEmp('${e.id}')" title="แก้ไข">✏️</button></td>
     </tr>`}).join('')}</tbody>
   </table>`:`<div class="empty"><div class="ei">🔍</div><h3>ไม่พบข้อมูล</h3><p>ลองเปลี่ยนคำค้นหา</p></div>`}
   </div>
@@ -635,10 +632,16 @@ function renderForm(){
       <input type="date" name="resignDate" id="rd-inp" value="${esc(toInputDate(e.resignDate))}" ${e.status==='resigned'?'required':''}></div>
   </div>
 
-  <div class="form-foot">
+  ${isEdit?`<div class="form-foot" style="justify-content:space-between">
+    <button type="button" class="btn btn-del" onclick="confirmDel('${e.id}')">🗑️ ลบพนักงาน</button>
+    <div style="display:flex;gap:10px">
+      <button type="button" class="btn btn-g" onclick="goPage('list')">ยกเลิก</button>
+      <button type="submit" class="btn btn-p">💾 บันทึกการแก้ไข</button>
+    </div>
+  </div>`:`<div class="form-foot">
     <button type="button" class="btn btn-g" onclick="goPage('list')">ยกเลิก</button>
-    <button type="submit" class="btn btn-p">${isEdit?'💾 บันทึกการแก้ไข':'✅ เพิ่มพนักงาน'}</button>
-  </div>
+    <button type="submit" class="btn btn-p">✅ เพิ่มพนักงาน</button>
+  </div>`}
 </div>
 </form>`;
 }
@@ -655,10 +658,7 @@ function renderDepts(){
         <td><strong style="color:var(--pd)">${esc(d.name)}</strong></td>
         <td>${d.manager?`<span style="font-weight:600">${esc(d.manager)}</span>`:'-'}</td>
         <td><span style="background:var(--pl);color:var(--pd);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">${cnt} คน</span></td>
-        <td><div style="display:flex;gap:4px">
-          <button class="btn btn-sm btn-ed" onclick="editDept('${d.id}')">แก้ไข</button>
-          <button class="btn btn-sm btn-del" onclick="confirmDeptDel('${d.id}')">ลบ</button>
-        </div></td>
+        <td><button class="btn btn-sm btn-ed" onclick="editDept('${d.id}')" title="แก้ไข">✏️</button></td>
       </tr>`;
     }).join('');
   }
@@ -696,10 +696,7 @@ function renderDepts(){
         <td><strong style="color:var(--pd)">${esc(d.name)}</strong></td>
         <td>${d.manager?`<span style="font-weight:600">${esc(d.manager)}</span>`:'-'}</td>
         <td><span style="background:var(--pl);color:var(--pd);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">${cnt} คน</span></td>
-        <td><div style="display:flex;gap:4px">
-          <button class="btn btn-sm btn-ed" onclick="editDept('${d.id}')">แก้ไข</button>
-          <button class="btn btn-sm btn-del" onclick="confirmDeptDel('${d.id}')">ลบ</button>
-        </div></td>
+        <td><button class="btn btn-sm btn-ed" onclick="editDept('${d.id}')" title="แก้ไข">✏️</button></td>
       </tr>`;
     }).join(''):`<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:14px">ยังไม่มีแผนก</td></tr>`;
     return sectionHdr+rows;
@@ -753,10 +750,16 @@ function renderDeptForm(){
     <div class="fg"><label class="lb">ผู้ช่วยผู้จัดการ</label>
       <input type="text" name="assistantManager" value="${esc(d.assistantManager||'')}" placeholder="ชื่อผู้ช่วยผู้จัดการ"></div>
   </div>
-  <div class="form-foot">
+  ${isEdit?`<div class="form-foot" style="justify-content:space-between">
+    <button type="button" class="btn btn-del" onclick="confirmDeptDel('${d.id}')">🗑️ ลบแผนก</button>
+    <div style="display:flex;gap:10px">
+      <button type="button" class="btn btn-g" onclick="goPage('depts')">ยกเลิก</button>
+      <button type="submit" class="btn btn-p">💾 บันทึกการแก้ไข</button>
+    </div>
+  </div>`:`<div class="form-foot">
     <button type="button" class="btn btn-g" onclick="goPage('depts')">ยกเลิก</button>
-    <button type="submit" class="btn btn-p">${isEdit?'💾 บันทึกการแก้ไข':'✅ เพิ่มแผนก'}</button>
-  </div>
+    <button type="submit" class="btn btn-p">✅ เพิ่มแผนก</button>
+  </div>`}
 </div>
 </form>`;
 }
@@ -868,6 +871,7 @@ async function doDel(){
   const ok=await apiPost({action:'delete',id});
   S.emps=S.emps.filter(e=>e.id!==id);lsave();
   toast(ok?'ลบข้อมูลสำเร็จ':'ลบแล้ว (Local)',ok?'ok':'');
+  S.editId=null;S.page='list';
   render();
 }
 
@@ -921,7 +925,9 @@ async function doDeptDel(){
   const id=S.deptDelId;S.deptDelId=null;
   const ok=await apiDeptPost({action:'deleteDept',id});
   S.depts=S.depts.filter(d=>d.id!==id);dsave();
-  toast(ok?'ลบแผนกสำเร็จ':'ลบแล้ว (Local)',ok?'ok':'');render();
+  toast(ok?'ลบแผนกสำเร็จ':'ลบแล้ว (Local)',ok?'ok':'');
+  S.deptEditId=null;S.page='depts';
+  render();
 }
 async function submitDeptForm(ev){
   ev.preventDefault();
