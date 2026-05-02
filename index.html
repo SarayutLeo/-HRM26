@@ -522,7 +522,7 @@ function renderList(){
   <div class="tbl-wrap">
   ${emps.length?`<table>
     <thead><tr>
-      <th>#</th><th>รหัสพนักงาน</th><th>ชื่อ-นามสกุล</th><th>อายุ</th><th>บริษัท</th><th>แผนก</th>
+      <th>#</th><th>รหัสพนักงาน</th><th>ชื่อ-นามสกุล</th><th>อายุ</th><th>แผนก</th>
       <th>ตำแหน่ง</th><th>วันเริ่มงาน</th><th>อายุงาน</th><th>ผู้บังคับบัญชา</th><th>สถานะ</th><th>จัดการ</th>
     </tr></thead>
     <tbody>${emps.map((e,i)=>{const grey=e.status==='resigned';return`<tr style="${grey?'color:#94a3b8':''}">
@@ -530,7 +530,6 @@ function renderList(){
       <td><span class="ecode" style="${grey?'background:#f1f5f9;color:#94a3b8':''}">${esc(e.empId)}</span></td>
       <td><span style="${grey?'':'font-weight:600'}">${esc(e.fullName)}</span>${e.nickname?`<span style="font-size:12px;color:${grey?'#cbd5e1':'#64748b'}"> (${esc(e.nickname)})</span>`:''}<br><span style="font-size:11px;color:${grey?'#cbd5e1':'#64748b'}">${esc(e.email||'')}</span></td>
       <td style="text-align:center;font-size:13px">${calcAge(e.birthDate)}</td>
-      <td>${esc(e.company||'-')}</td>
       <td>${esc(e.department||'-')}</td>
       <td>${esc(e.position||'-')}</td>
       <td>${fdate(e.startDate)}</td>
