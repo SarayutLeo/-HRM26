@@ -1091,6 +1091,8 @@ function goPage(p){
   if(p!=='dept-form')S.deptEditId=null;
   if(p!=='user-form')S.userEditId=null;
   S.delId=null;S.deptDelId=null;S.userDelId=null;
+  if(p==='dashboard'){S.dashDept='all';S.dashYear=new Date().getFullYear();}
+  if(p==='list'){S.filterSt='all';S.filterEmpType='all';S.filterCompany='all';S.filterDept='all';S.filterPosition='all';S.search='';}
   if(p==='users'&&isAdmin()&&!S.users.length)apiUserFetch().then(()=>render());
   render();window.scrollTo(0,0);
 }
