@@ -46,10 +46,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--txt);min-
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px}
 .sc{background:var(--white);border-radius:var(--r);padding:18px 16px;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
 .sc-ic{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.ic-b{background:#dbeafe}.ic-g{background:#d1fae5}.ic-r{background:#ffe4e6}.ic-y{background:#fef3c7}.ic-v{background:#ede9fe}
+.ic-b{background:#dbeafe}.ic-g{background:#d1fae5}.ic-r{background:#ffe4e6}.ic-y{background:#fef3c7}.ic-v{background:#ede9fe}.ic-t{background:#ccfbf1}
 .sc-info h3{font-size:26px;font-weight:700;line-height:1;margin-bottom:3px}
 .sc-info .lb{font-size:12px;color:var(--muted);font-weight:500}
-.sc-b h3{color:#1d4ed8}.sc-g h3{color:#059669}.sc-r h3{color:#dc2626}.sc-y h3{color:#d97706}.sc-v h3{color:#7c3aed}
+.sc-b h3{color:#1d4ed8}.sc-g h3{color:#059669}.sc-r h3{color:#dc2626}.sc-y h3{color:#d97706}.sc-v h3{color:#7c3aed}.sc-t h3{color:#0f766e}
 /* ── Card ── */
 .card{background:var(--white);border-radius:var(--r);padding:20px;box-shadow:var(--sh);margin-bottom:20px}
 /* ── Chart ── */
@@ -550,12 +550,20 @@ function renderDash(){
   // ปีปัจจุบัน = 21/12 ปีที่แล้ว ถึง 21/12 ปีนี้
   const periodStart=new Date(thisYear-1,11,21); // 21 ธ.ค. ปีก่อน
   const periodEnd=new Date(thisYear,11,21);      // 21 ธ.ค. ปีนี้
-  // Stats 6 หัวข้อ
+  // Stats 7 หัวข้อ
   const active=emps.filter(e=>e.status==='active').length;
+  const pctActive=n=>active>0?(n/active*100).toFixed(1)+'%':'—';
   const newYear=emps.filter(e=>{const d=pdate(e.startDate);return d&&d>=periodStart&&d<periodEnd}).length;
   const resignYear=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const d=pdate(e.resignDate);return d&&d>=periodStart&&d<periodEnd;
+  }).length;
+  // พนักงานผ่านทดลองงาน: เริ่มงานในปีปัจจุบัน, active, อายุงาน >= 119 วัน
+  const passedProbation=emps.filter(e=>{
+    if(e.status!=='active')return false;
+    const s=pdate(e.startDate);
+    if(!s||s<periodStart||s>=periodEnd)return false;
+    return Math.floor((now-s)/86400000)>=119;
   }).length;
   // ฐานพนักงานเดิม (startDate < 21/12/2025) ทุกสถานะ
   const empOldTotal=emps.filter(e=>{const s=pdate(e.startDate);return s&&s<EMP_CUTOFF}).length;
@@ -636,11 +644,12 @@ function renderDash(){
 
 <div class="stats">
   <div class="sc sc-g"><div class="sc-ic ic-g">✅</div><div class="sc-info"><h3>${active}</h3><div class="lb">พนักงานปัจจุบัน</div></div></div>
-  <div class="sc sc-b"><div class="sc-ic ic-b">🆕</div><div class="sc-info"><h3>${newYear}</h3><div class="lb">พนักงานเข้าใหม่ปี ${thisYear}</div></div></div>
-  <div class="sc sc-r"><div class="sc-ic ic-r">🚪</div><div class="sc-info"><h3>${resignYear}</h3><div class="lb">พนักงานลาออกปี ${thisYear}</div></div></div>
+  <div class="sc sc-b"><div class="sc-ic ic-b">🆕</div><div class="sc-info"><h3>${newYear}</h3><div class="lb">พนักงานเข้าใหม่ปีปัจจุบัน</div><div style="font-size:11px;color:#1d4ed8;font-weight:700;margin-top:3px">${pctActive(newYear)} ของพนักงานปัจจุบัน</div></div></div>
+  <div class="sc sc-r"><div class="sc-ic ic-r">🚪</div><div class="sc-info"><h3>${resignYear}</h3><div class="lb">พนักงานลาออกปีปัจจุบัน</div><div style="font-size:11px;color:#dc2626;font-weight:700;margin-top:3px">${pctActive(resignYear)} ของพนักงานปัจจุบัน</div></div></div>
   <div class="sc sc-r"><div class="sc-ic ic-r">👤</div><div class="sc-info"><h3>${resignOld}</h3><div class="lb">พนักงานเดิมลาออก</div><div style="font-size:11px;color:#dc2626;font-weight:700;margin-top:3px">${pctOld(resignOld)} ของพนักงานเดิม</div></div></div>
   <div class="sc sc-y"><div class="sc-ic ic-y">⏱️</div><div class="sc-info"><h3>${probationResign}</h3><div class="lb">ลาออกช่วงทดลองงาน</div><div style="font-size:11px;color:#d97706;font-weight:700;margin-top:3px">${pctNew(probationResign)} ของพนักงานใหม่</div></div></div>
   <div class="sc sc-v"><div class="sc-ic ic-v">🏁</div><div class="sc-info"><h3>${afterProbation}</h3><div class="lb">ลาออกหลังผ่านทดลองงาน</div><div style="font-size:11px;color:#7c3aed;font-weight:700;margin-top:3px">${pctNew(afterProbation)} ของพนักงานใหม่</div></div></div>
+  <div class="sc sc-t"><div class="sc-ic ic-t">✔️</div><div class="sc-info"><h3>${passedProbation}</h3><div class="lb">พนักงานผ่านทดลองงาน</div><div style="font-size:11px;color:#0f766e;font-weight:700;margin-top:3px">(ปีปัจจุบัน อายุงาน ≥ 119 วัน)</div></div></div>
 </div>
 
 <div class="chart-card">
