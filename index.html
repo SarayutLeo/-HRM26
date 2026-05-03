@@ -424,7 +424,7 @@ function buildChart(year,emps){
 function renderLogin(){
   return`<div class="login-wrap">
   <div class="login-box">
-    <div class="login-logo"><div class="li">🏢</div><h1>Human Resourcing Manager</h1><p>ระบบจัดการข้อมูลพนักงาน</p><p style="font-size:11px;color:#94a3b8;margin-top:6px">Powered by Chemtech Innovation Co., Ltd.</p></div>
+    <div class="login-logo"><div class="li">🏢</div><h1>Human Resourcing Manager</h1><p>ระบบจัดการข้อมูลพนักงาน</p><p style="font-size:11px;color:#94a3b8;margin-top:6px">Powered by Chemtech Groups</p></div>
     ${S.loginErr?`<div class="login-err">❌ ${esc(S.loginErr)}</div>`:''}
     <form onsubmit="doLogin(event)">
       <div class="fg" style="margin-bottom:14px">
@@ -519,7 +519,7 @@ function renderSidebar(){
     ...(isAdmin()?[{id:'users',ico:'👤',lbl:'จัดการผู้ใช้'}]:[]),
   ];
   return`<nav class="sidebar${S.menuOpen?' open':''}">
-  <div class="sb-logo"><div class="li">🏢</div><h1>Human Resourcing Manager</h1><p>ระบบจัดการพนักงาน</p><p style="font-size:10px;color:#475569;margin-top:4px">Powered by Chemtech Innovation Co., Ltd.</p></div>
+  <div class="sb-logo"><div class="li">🏢</div><h1>Human Resourcing Manager</h1><p>ระบบจัดการพนักงาน</p></div>
   <div class="sb-nav">
     ${S.user?`<div class="sb-user"><div class="un">${esc(S.user.name||S.user.username)}</div><div class="ur"><span class="${isAdmin()?'role-admin':'role-user'}">${isAdmin()?'Admin':'User'}</span></div></div>`:''}
     <div class="nav-sec">เมนูหลัก</div>
@@ -533,6 +533,7 @@ function renderSidebar(){
       <div class="dot ${S.apiUrl&&S.connected?'on':'off'}"></div>
       <span class="conn-lbl">${S.apiUrl&&S.connected?'Google Sheets':'เก็บข้อมูลในเครื่อง'}</span>
     </div>
+    <div style="font-size:10px;color:#334155;margin-top:8px;line-height:1.4">Powered by Chemtech Groups</div>
   </div>
 </nav>`;
 }
