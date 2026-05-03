@@ -548,22 +548,22 @@ function renderDash(){
   if(S.dashDept!=='all')emps=emps.filter(e=>e.department===S.dashDept);
 
   // ปีปัจจุบัน = 21/12 ปีที่แล้ว ถึง 21/12 ปีนี้
-  const periodStart=new Date(thisYear-1,11,21); // 21 ธ.ค. ปีก่อน
-  const periodEnd=new Date(thisYear,11,21);      // 21 ธ.ค. ปีนี้
+  const periodStart=new Date(thisYear-1,11,21); // 21 ธ.ค. ปีก่อน (รวมวันนี้)
+  const periodEnd=new Date(thisYear,11,20);      // 20 ธ.ค. ปีนี้ (รวมวันนี้)
   // Stats 7 หัวข้อ
   const active=emps.filter(e=>e.status==='active').length;
   const pctActive=n=>active>0?(n/active*100).toFixed(1)+'%':'—';
   const activeOld=emps.filter(e=>{if(e.status!=='active')return false;const s=pdate(e.startDate);return s&&s<periodStart;}).length;
-  const newYear=emps.filter(e=>{if(e.status!=='active')return false;const d=pdate(e.startDate);return d&&d>=periodStart&&d<periodEnd}).length;
+  const newYear=emps.filter(e=>{if(e.status!=='active')return false;const d=pdate(e.startDate);return d&&d>=periodStart&&d<=periodEnd}).length;
   const resignYear=emps.filter(e=>{
     if(e.status!=='resigned')return false;
-    const d=pdate(e.resignDate);return d&&d>=periodStart&&d<periodEnd;
+    const d=pdate(e.resignDate);return d&&d>=periodStart&&d<=periodEnd;
   }).length;
   // พนักงานผ่านทดลองงาน: เริ่มงานในปีปัจจุบัน, active, อายุงาน >= 119 วัน
   const passedProbation=emps.filter(e=>{
     if(e.status!=='active')return false;
     const s=pdate(e.startDate);
-    if(!s||s<periodStart||s>=periodEnd)return false;
+    if(!s||s<periodStart||s>periodEnd)return false;
     return Math.floor((now-s)/86400000)>=119;
   }).length;
   // ฐานพนักงานเดิม (startDate < 21/12/2025) ทุกสถานะ
@@ -648,11 +648,12 @@ function renderDash(){
   <div class="sc sc-b"><div class="sc-ic ic-b">🏛️</div><div class="sc-info"><h3>${activeOld}</h3><div class="lb">พนักงานเดิม</div><div style="font-size:10px;color:#1d4ed8;font-weight:700;margin-top:3px">${pctActive(activeOld)} ของพนักงานปัจจุบัน</div></div></div>
   <div class="sc sc-b"><div class="sc-ic ic-b">🆕</div><div class="sc-info"><h3>${newYear}</h3><div class="lb">พนักงานใหม่</div><div style="font-size:10px;color:#1d4ed8;font-weight:700;margin-top:3px">${pctActive(newYear)} ของพนักงานปัจจุบัน</div></div></div>
   <div class="sc sc-t"><div class="sc-ic ic-t">✔️</div><div class="sc-info"><h3>${passedProbation}</h3><div class="lb">พนักงานใหม่ (ผ่านทดลองงาน)</div><div style="font-size:10px;color:#0f766e;font-weight:700;margin-top:3px">${newYear>0?(passedProbation/newYear*100).toFixed(1)+'%':'—'} ของพนักงานใหม่</div></div></div>
-  <div class="sc sc-r"><div class="sc-ic ic-r">🚪</div><div class="sc-info"><h3>${resignYear}</h3><div class="lb">พนักงานลาออก</div><div style="font-size:10px;color:#dc2626;font-weight:700;margin-top:3px">${pctActive(resignYear)} ของพนักงานปัจจุบัน</div></div></div>
+  <div class="sc sc-r"><div class="sc-ic ic-r">🚪</div><div class="sc-info"><h3>${resignYear}</h3><div class="lb">พนักงานลาออกรวม</div><div style="font-size:10px;color:#dc2626;font-weight:500;margin-top:3px">พนักงานที่ลาออกรวมในรอบปีปัจจุบัน</div></div></div>
   <div class="sc sc-r"><div class="sc-ic ic-r">👤</div><div class="sc-info"><h3>${resignOld}</h3><div class="lb">พนักงานเดิมลาออก</div><div style="font-size:10px;color:#dc2626;font-weight:700;margin-top:3px">${pctOld(resignOld)} ของพนักงานเดิม</div></div></div>
   <div class="sc sc-y"><div class="sc-ic ic-y">⏱️</div><div class="sc-info"><h3>${probationResign}</h3><div class="lb">ลาออกช่วงทดลองงาน</div><div style="font-size:10px;color:#d97706;font-weight:700;margin-top:3px">${pctNew(probationResign)} ของพนักงานใหม่</div></div></div>
   <div class="sc sc-v"><div class="sc-ic ic-v">🏁</div><div class="sc-info"><h3>${afterProbation}</h3><div class="lb">ลาออกหลังผ่านทดลองงาน</div><div style="font-size:10px;color:#7c3aed;font-weight:700;margin-top:3px">${pctNew(afterProbation)} ของพนักงานใหม่</div></div></div>
 </div>
+<p style="font-size:11px;color:#dc2626;margin-top:-10px;margin-bottom:18px">* รอบปีปัจจุบัน หมายถึง ระยะเวลาตั้งแต่วันที่ 21 ธันวาคม ของปีก่อนหน้าจนถึง 20 ธันวาคมของปีปัจจุบัน</p>
 
 <div class="chart-card">
   <div class="chart-top">
