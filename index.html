@@ -554,7 +554,7 @@ function renderDash(){
   const active=emps.filter(e=>e.status==='active').length;
   const pctActive=n=>active>0?(n/active*100).toFixed(1)+'%':'—';
   const activeOld=emps.filter(e=>{if(e.status!=='active')return false;const s=pdate(e.startDate);return s&&s<periodStart;}).length;
-  const newYear=emps.filter(e=>{const d=pdate(e.startDate);return d&&d>=periodStart&&d<periodEnd}).length;
+  const newYear=emps.filter(e=>{if(e.status!=='active')return false;const d=pdate(e.startDate);return d&&d>=periodStart&&d<periodEnd}).length;
   const resignYear=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const d=pdate(e.resignDate);return d&&d>=periodStart&&d<periodEnd;
