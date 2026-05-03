@@ -572,25 +572,31 @@ function renderDash(){
   const empNewTotal=emps.filter(e=>{const s=pdate(e.startDate);return s&&s>=EMP_CUTOFF}).length;
   const pctOld=n=>empOldTotal>0?(n/empOldTotal*100).toFixed(1)+'%':'—';
   const pctNew=n=>empNewTotal>0?(n/empNewTotal*100).toFixed(1)+'%':'—';
-  // พนักงานเดิมลาออก (startDate < cutoff)
+  // พนักงานเดิมลาออกในรอบปี (resignDate ในรอบปี + startDate < periodStart)
   const resignOld=emps.filter(e=>{
     if(e.status!=='resigned')return false;
-    const s=pdate(e.startDate);return s&&s<EMP_CUTOFF;
+    const s=pdate(e.startDate),r=pdate(e.resignDate);
+    if(!s||!r)return false;
+    if(r<periodStart||r>periodEnd)return false;
+    return s<periodStart;
   }).length;
-  // ลาออกช่วงทดลองงาน (< 119 วัน)
+  // ลาออกช่วงทดลองงาน (resignDate ในรอบปี + เป็นพนักงานใหม่ + อายุงาน < 119 วัน)
   const probationResign=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const s=pdate(e.startDate),r=pdate(e.resignDate);
     if(!s||!r)return false;
     if(r<periodStart||r>periodEnd)return false;
+    if(s<periodStart)return false;
     return Math.floor((r-s)/86400000)<119;
   }).length;
-  // ลาออกหลังผ่านทดลองงาน (>= 119 วัน, เฉพาะพนักงานใหม่)
+  // ลาออกหลังผ่านทดลองงาน (resignDate ในรอบปี + เป็นพนักงานใหม่ + อายุงาน >= 119 วัน)
   const afterProbation=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const s=pdate(e.startDate),r=pdate(e.resignDate);
     if(!s||!r)return false;
-    return s>=EMP_CUTOFF&&Math.floor((r-s)/86400000)>=119;
+    if(r<periodStart||r>periodEnd)return false;
+    if(s<periodStart)return false;
+    return Math.floor((r-s)/86400000)>=119;
   }).length;
 
   // ปีสำหรับ chart dropdown
