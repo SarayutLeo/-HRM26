@@ -554,18 +554,25 @@ function renderDash(){
     if(e.status!=='resigned')return false;
     const d=pdate(e.resignDate);return d&&d.getFullYear()===thisYear;
   }).length;
-  const totalResigned=emps.filter(e=>e.status==='resigned').length;
-  const pct=n=>totalResigned>0?(n/totalResigned*100).toFixed(1)+'%':'—';
+  // ฐานพนักงานเดิม (startDate < 21/12/2025) ทุกสถานะ
+  const empOldTotal=emps.filter(e=>{const s=pdate(e.startDate);return s&&s<EMP_CUTOFF}).length;
+  // ฐานพนักงานใหม่ (startDate >= 21/12/2025) ทุกสถานะ
+  const empNewTotal=emps.filter(e=>{const s=pdate(e.startDate);return s&&s>=EMP_CUTOFF}).length;
+  const pctOld=n=>empOldTotal>0?(n/empOldTotal*100).toFixed(1)+'%':'—';
+  const pctNew=n=>empNewTotal>0?(n/empNewTotal*100).toFixed(1)+'%':'—';
+  // พนักงานเดิมลาออก (startDate < cutoff)
   const resignOld=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const s=pdate(e.startDate);return s&&s<EMP_CUTOFF;
   }).length;
+  // ลาออกช่วงทดลองงาน (< 119 วัน)
   const probationResign=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const s=pdate(e.startDate),r=pdate(e.resignDate);
     if(!s||!r)return false;
     return Math.floor((r-s)/86400000)<119;
   }).length;
+  // ลาออกหลังผ่านทดลองงาน (>= 119 วัน)
   const afterProbation=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const s=pdate(e.startDate),r=pdate(e.resignDate);
@@ -628,9 +635,9 @@ function renderDash(){
   <div class="sc sc-g"><div class="sc-ic ic-g">✅</div><div class="sc-info"><h3>${active}</h3><div class="lb">พนักงานปัจจุบัน</div></div></div>
   <div class="sc sc-b"><div class="sc-ic ic-b">🆕</div><div class="sc-info"><h3>${newYear}</h3><div class="lb">พนักงานเข้าใหม่ปี ${thisYear}</div></div></div>
   <div class="sc sc-r"><div class="sc-ic ic-r">🚪</div><div class="sc-info"><h3>${resignYear}</h3><div class="lb">พนักงานลาออกปี ${thisYear}</div></div></div>
-  <div class="sc sc-r"><div class="sc-ic ic-r">👤</div><div class="sc-info"><h3>${resignOld} <span style="font-size:13px;font-weight:500;color:#94a3b8">${pct(resignOld)}</span></h3><div class="lb">พนักงานเดิมลาออก</div></div></div>
-  <div class="sc sc-y"><div class="sc-ic ic-y">⏱️</div><div class="sc-info"><h3>${probationResign} <span style="font-size:13px;font-weight:500;color:#94a3b8">${pct(probationResign)}</span></h3><div class="lb">ลาออกช่วงทดลองงาน</div></div></div>
-  <div class="sc sc-v"><div class="sc-ic ic-v">🏁</div><div class="sc-info"><h3>${afterProbation} <span style="font-size:13px;font-weight:500;color:#94a3b8">${pct(afterProbation)}</span></h3><div class="lb">ลาออกหลังผ่านทดลองงาน</div></div></div>
+  <div class="sc sc-r"><div class="sc-ic ic-r">👤</div><div class="sc-info"><h3>${resignOld}</h3><div class="lb">พนักงานเดิมลาออก</div><div style="font-size:11px;color:#dc2626;font-weight:700;margin-top:3px">${pctOld(resignOld)} ของพนักงานเดิม</div></div></div>
+  <div class="sc sc-y"><div class="sc-ic ic-y">⏱️</div><div class="sc-info"><h3>${probationResign}</h3><div class="lb">ลาออกช่วงทดลองงาน</div><div style="font-size:11px;color:#d97706;font-weight:700;margin-top:3px">${pctNew(probationResign)} ของพนักงานใหม่</div></div></div>
+  <div class="sc sc-v"><div class="sc-ic ic-v">🏁</div><div class="sc-info"><h3>${afterProbation}</h3><div class="lb">ลาออกหลังผ่านทดลองงาน</div><div style="font-size:11px;color:#7c3aed;font-weight:700;margin-top:3px">${pctNew(afterProbation)} ของพนักงานใหม่</div></div></div>
 </div>
 
 <div class="chart-card">
