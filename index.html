@@ -605,6 +605,9 @@ function renderDash(){
   const yrs=new Set([thisYear,thisYear-1,thisYear-2]);
   S.emps.forEach(e=>{if(e.startDate)yrs.add(pdate(e.startDate)?.getFullYear());if(e.resignDate)yrs.add(pdate(e.resignDate)?.getFullYear())});
   const yopts=[...yrs].filter(Boolean).sort((a,b)=>a-b).map(y=>`<option value="${y}"${y===S.dashYear?' selected':''}>${y}</option>`).join('');
+  // แผนกสำหรับ chart dropdown
+  const deptNames=[...new Set(S.depts.map(d=>d.name))].sort((a,b)=>a.localeCompare(b,'th'));
+  const dopts=deptNames.map(n=>`<option value="${esc(n)}"${S.dashDept===n?' selected':''}>${esc(n)}</option>`).join('');
 
   // พนักงานเข้าใหม่ล่าสุด (เฉพาะ active เรียงตามวันเริ่มงานล่าสุด)
   const recent=[...emps].filter(e=>e.status==='active')
@@ -638,7 +641,20 @@ function renderDash(){
         <span class="leg"><span class="ldot" style="background:#f43f5e"></span>ลาออก (พนักงานเดิม)</span>
         <span class="leg"><span class="ldot" style="background:#f97316"></span>ลาออก (พนักงานใหม่)</span>
       </div>
-      <select class="yr" onchange="setDashYear(this.value)">${yopts}</select>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:5px">
+          <label style="font-size:12px;color:var(--muted);white-space:nowrap">แผนก</label>
+          <select class="yr" onchange="setDashDept(this.value)">
+            <option value="all"${S.dashDept==='all'?' selected':''}>ทุกแผนก</option>
+            ${dopts}
+          </select>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <label style="font-size:12px;color:var(--muted);white-space:nowrap">ปี</label>
+          <select class="yr" onchange="setDashYear(this.value)">${yopts}</select>
+        </div>
+        ${S.dashDept!=='all'?`<button class="btn btn-sm btn-g" onclick="setDashDept('all')" style="font-size:11px">✕ ล้าง</button>`:''}
+      </div>
     </div>
   </div>
   ${buildChart(S.dashYear,emps)}
