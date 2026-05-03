@@ -30,6 +30,11 @@ const SHEET_DEPT  = 'แผนก';
 const DEPT_HEADERS = ['id', 'company', 'name', 'manager', 'assistantManager', 'createdAt', 'updatedAt'];
 const DEPT_LABELS  = ['ID (ระบบ)', 'บริษัท', 'ชื่อแผนก', 'ผู้จัดการแผนก', 'ผู้ช่วยผู้จัดการ', 'วันที่สร้าง', 'วันที่แก้ไข'];
 
+// ── Sheet: ผู้ใช้งาน ───────────────────────────────────────────
+const SHEET_USER  = 'ผู้ใช้งาน';
+const USER_HEADERS = ['id', 'username', 'password', 'role', 'name', 'createdAt', 'updatedAt'];
+const USER_LABELS  = ['ID', 'Username', 'Password', 'Role', 'ชื่อ-นามสกุล', 'วันที่สร้าง', 'วันที่แก้ไข'];
+
 // ── Sheet helpers ──────────────────────────────────────────────
 function initSheet(name, labels, widths) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -81,6 +86,18 @@ function getEmpSheet()  {
 function getDeptSheet() {
   const s = initSheet(SHEET_DEPT, DEPT_LABELS, [140,200,160,160,160,160,160]);
   ensureColumns(s, DEPT_LABELS);
+  return s;
+}
+function getUserSheet() {
+  const s = initSheet(SHEET_USER, USER_LABELS, [140,120,120,80,160,160,160]);
+  ensureColumns(s, USER_LABELS);
+  if (s.getLastRow() <= 1) {
+    const now = new Date().toISOString();
+    s.appendRow(objToRow(USER_HEADERS, {
+      id:'U001', username:'admin', password:'admin1234',
+      role:'admin', name:'Administrator', createdAt:now, updatedAt:now
+    }));
+  }
   return s;
 }
 
@@ -135,6 +152,9 @@ function doGet(e) {
     if (action === 'listDepts') {
       return jsonResp({ success: true, data: readSheet(getDeptSheet(), DEPT_HEADERS) });
     }
+    if (action === 'listUsers') {
+      return jsonResp({ success: true, data: readSheet(getUserSheet(), USER_HEADERS) });
+    }
     return jsonResp({ success: false, error: 'Unknown action' });
   } catch (err) {
     return jsonResp({ success: false, error: err.toString() });
@@ -187,6 +207,43 @@ function doPost(e) {
       const sheet = getDeptSheet();
       const row = findRowById(sheet, id);
       if (row < 0) return jsonResp({ success: false, error: 'Department not found' });
+      sheet.deleteRow(row);
+      return jsonResp({ success: true });
+    }
+
+    // ── Users ──
+    if (action === 'login') {
+      const users = readSheet(getUserSheet(), USER_HEADERS);
+      const user = users.find(u => u.username === data.username && u.password === data.password);
+      if (user) {
+        return jsonResp({ success: true, user: { id: user.id, username: user.username, name: user.name, role: user.role } });
+      }
+      return jsonResp({ success: false, error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
+    }
+    if (action === 'createUser') {
+      const sheet = getUserSheet();
+      const users = readSheet(sheet, USER_HEADERS);
+      if (users.find(u => u.username === data.username)) {
+        return jsonResp({ success: false, error: 'Username นี้ถูกใช้งานแล้ว' });
+      }
+      sheet.appendRow(objToRow(USER_HEADERS, data));
+      return jsonResp({ success: true });
+    }
+    if (action === 'updateUser') {
+      const sheet = getUserSheet();
+      const row = findRowById(sheet, data.id);
+      if (row < 0) return jsonResp({ success: false, error: 'User not found' });
+      if (!data.password) {
+        const existing = readSheet(sheet, USER_HEADERS).find(u => u.id === data.id);
+        if (existing) data.password = existing.password;
+      }
+      sheet.getRange(row, 1, 1, USER_HEADERS.length).setValues([objToRow(USER_HEADERS, data)]);
+      return jsonResp({ success: true });
+    }
+    if (action === 'deleteUser') {
+      const sheet = getUserSheet();
+      const row = findRowById(sheet, id);
+      if (row < 0) return jsonResp({ success: false, error: 'User not found' });
       sheet.deleteRow(row);
       return jsonResp({ success: true });
     }

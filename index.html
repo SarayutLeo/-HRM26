@@ -177,6 +177,22 @@ textarea{resize:vertical;min-height:72px}
   .form-card{padding:16px}
   .stats{grid-template-columns:1fr 1fr}
 }
+/* ── Login Page ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--sb);padding:20px}
+.login-box{background:#fff;border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .li{font-size:52px;line-height:1;margin-bottom:10px}
+.login-logo h1{font-size:22px;font-weight:700;color:var(--sb)}
+.login-logo p{font-size:13px;color:var(--muted);margin-top:4px}
+.login-err{background:#ffe4e6;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;text-align:center}
+@media(max-width:480px){.login-box{padding:28px 24px}}
+/* ── Role badge ── */
+.role-admin{background:#dbeafe;color:#1d4ed8;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;display:inline-block}
+.role-user{background:#f1f5f9;color:#475569;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;display:inline-block}
+/* ── Sidebar user info ── */
+.sb-user{padding:10px 14px;background:rgba(255,255,255,.06);border-radius:8px;margin:6px 10px 2px}
+.sb-user .un{font-size:13px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-user .ur{margin-top:3px}
 </style>
 </head>
 <body>
@@ -212,6 +228,12 @@ const S={
   delId:null,
   localBackup:null,
   menuOpen:false,
+  user:(function(){try{return JSON.parse(localStorage.getItem('hrm_user')||'null')}catch{return null}})(),
+  users:[],
+  loginErr:'',
+  loginLoading:false,
+  userEditId:null,
+  userDelId:null,
 };
 
 // ── Storage ────────────────────────────────────────────────────
@@ -263,6 +285,30 @@ async function apiDeptPost(body){
     return false;
   }catch{return false}
 }
+async function apiLogin(username,password){
+  if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อฐานข้อมูล กรุณาตั้งค่า API URL ก่อน'};
+  try{
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action:'login',data:{username,password}})});
+    return JSON.parse(await r.text());
+  }catch{return{success:false,error:'เชื่อมต่อไม่ได้ กรุณาลองใหม่'}}
+}
+async function apiUserFetch(){
+  if(!S.apiUrl||!isAdmin())return false;
+  try{
+    const r=await fetch(S.apiUrl+'?action=listUsers',{redirect:'follow'});
+    const d=JSON.parse(await r.text());
+    if(d.success){S.users=d.data;return true}
+    return false;
+  }catch{return false}
+}
+async function apiUserPost(body){
+  if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อ'};
+  try{
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify(body)});
+    return JSON.parse(await r.text());
+  }catch{return{success:false,error:'เชื่อมต่อไม่ได้'}}
+}
+function isAdmin(){return S.user&&S.user.role==='admin'}
 
 // ── Helpers ────────────────────────────────────────────────────
 function uid(){return'E'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase()}
@@ -355,21 +401,113 @@ function buildChart(year,emps){
   </svg>`;
 }
 
+// ── Login ──────────────────────────────────────────────────────
+function renderLogin(){
+  return`<div class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo"><div class="li">🏢</div><h1>HRM System</h1><p>ระบบจัดการข้อมูลพนักงาน</p></div>
+    ${S.loginErr?`<div class="login-err">❌ ${esc(S.loginErr)}</div>`:''}
+    <form onsubmit="doLogin(event)">
+      <div class="fg" style="margin-bottom:14px">
+        <label class="lb">ชื่อผู้ใช้ (Username)</label>
+        <input type="text" id="ln-user" placeholder="กรอก Username" autocomplete="username" required>
+      </div>
+      <div class="fg" style="margin-bottom:20px">
+        <label class="lb">รหัสผ่าน (Password)</label>
+        <input type="password" id="ln-pass" placeholder="กรอก Password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-p" style="width:100%;justify-content:center;padding:11px" ${S.loginLoading?'disabled':''}>
+        ${S.loginLoading?'⏳ กำลังเข้าสู่ระบบ...':'🔐 เข้าสู่ระบบ'}
+      </button>
+    </form>
+    <p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:18px">ผู้ดูแลระบบสามารถสร้างบัญชีผู้ใช้ได้ในเมนู จัดการผู้ใช้</p>
+  </div>
+</div>`;
+}
+
+// ── Users Management ───────────────────────────────────────────
+function renderUsers(){
+  if(!isAdmin()){S.page='dashboard';return renderDash()}
+  return`
+<div class="ph">
+  <div><h2>จัดการผู้ใช้งาน</h2><p>ผู้ใช้งานทั้งหมด ${S.users.length} คน</p></div>
+  <button class="btn btn-p" onclick="goPage('user-form')">+ เพิ่มผู้ใช้</button>
+</div>
+<div class="tbl-card">
+  <div class="tbl-wrap">
+  ${S.users.length?`<table>
+    <thead><tr><th>#</th><th>Username</th><th>ชื่อ-นามสกุล</th><th>สิทธิ์</th><th>จัดการ</th></tr></thead>
+    <tbody>${S.users.map((u,i)=>`<tr>
+      <td style="color:#94a3b8;font-size:12px">${i+1}</td>
+      <td><strong>${esc(u.username)}</strong></td>
+      <td>${esc(u.name||'-')}</td>
+      <td><span class="${u.role==='admin'?'role-admin':'role-user'}">${u.role==='admin'?'Admin':'User'}</span></td>
+      <td style="display:flex;gap:6px"><button class="btn btn-sm btn-ed" onclick="editUser('${u.id}')">✏️ แก้ไข</button>${u.id===S.user.id?'':`<button class="btn btn-sm btn-del" onclick="confirmUserDel('${u.id}')">🗑️</button>`}</td>
+    </tr>`).join('')}</tbody>
+  </table>`:`<div class="empty"><div class="ei">👤</div><h3>ยังไม่มีผู้ใช้งาน</h3><p>กดปุ่ม "เพิ่มผู้ใช้" เพื่อเริ่มต้น</p></div>`}
+  </div>
+</div>`;
+}
+
+function renderUserForm(){
+  if(!isAdmin()){S.page='users';return renderUsers()}
+  const isEdit=!!S.userEditId;
+  const u=isEdit?S.users.find(x=>x.id===S.userEditId)||{}:{};
+  return`
+<div class="ph">
+  <div><h2>${isEdit?'แก้ไขผู้ใช้':'เพิ่มผู้ใช้ใหม่'}</h2>
+    <p>${isEdit?`แก้ไข: ${esc(u.username||'')} — ${esc(u.name||'')}`:'กรอกข้อมูลผู้ใช้งานให้ครบถ้วน'}</p>
+  </div>
+  <button class="btn btn-g" onclick="goPage('users')">← กลับ</button>
+</div>
+<form id="uf" onsubmit="submitUserForm(event)">
+<div class="form-card">
+  <div class="fsec">ข้อมูลผู้ใช้งาน</div>
+  <div class="fg2">
+    <div class="fg"><label class="lb">Username <span class="req">*</span></label>
+      <input type="text" name="username" value="${esc(u.username||'')}" required placeholder="username" ${isEdit?'readonly style="background:#f0f9ff;color:var(--pd);font-weight:600"':''}></div>
+    <div class="fg"><label class="lb">ชื่อ-นามสกุล</label>
+      <input type="text" name="name" value="${esc(u.name||'')}" placeholder="ชื่อ-นามสกุล"></div>
+    <div class="fg"><label class="lb">รหัสผ่าน ${isEdit?'<span style="font-size:11px;color:#94a3b8;font-weight:400">(เว้นว่างถ้าไม่เปลี่ยน)</span>':'<span class="req">*</span>'}</label>
+      <input type="password" name="password" ${isEdit?'':'required'} placeholder="${isEdit?'เว้นว่างถ้าไม่ต้องการเปลี่ยนรหัสผ่าน':'ตั้งรหัสผ่าน'}"></div>
+    <div class="fg"><label class="lb">สิทธิ์การใช้งาน <span class="req">*</span></label>
+      <select name="role" required>
+        <option value="user" ${(u.role||'user')==='user'?'selected':''}>User — ดูข้อมูลอย่างเดียว</option>
+        <option value="admin" ${u.role==='admin'?'selected':''}>Admin — แก้ไขได้ทุกอย่าง</option>
+      </select></div>
+  </div>
+  ${isEdit?`<div class="form-foot" style="justify-content:space-between">
+    ${u.id===S.user.id?'<div></div>':`<button type="button" class="btn btn-del" onclick="confirmUserDel('${u.id}')">🗑️ ลบผู้ใช้</button>`}
+    <div style="display:flex;gap:10px">
+      <button type="button" class="btn btn-g" onclick="goPage('users')">ยกเลิก</button>
+      <button type="submit" class="btn btn-p">💾 บันทึกการแก้ไข</button>
+    </div>
+  </div>`:`<div class="form-foot">
+    <button type="button" class="btn btn-g" onclick="goPage('users')">ยกเลิก</button>
+    <button type="submit" class="btn btn-p">✅ เพิ่มผู้ใช้</button>
+  </div>`}
+</div>
+</form>`;
+}
+
 // ── Sidebar ────────────────────────────────────────────────────
 function renderSidebar(){
   const nav=[
     {id:'dashboard',ico:'📊',lbl:'ภาพรวมระบบ'},
     {id:'list',ico:'👥',lbl:'รายชื่อพนักงาน'},
-    {id:'form',ico:'➕',lbl:'เพิ่มพนักงาน'},
+    ...(isAdmin()?[{id:'form',ico:'➕',lbl:'เพิ่มพนักงาน'}]:[]),
     {id:'depts',ico:'🏬',lbl:'ฐานข้อมูลแผนก'},
+    ...(isAdmin()?[{id:'users',ico:'👤',lbl:'จัดการผู้ใช้'}]:[]),
   ];
   return`<nav class="sidebar${S.menuOpen?' open':''}">
   <div class="sb-logo"><div class="li">🏢</div><h1>HRM System</h1><p>ระบบจัดการพนักงาน</p></div>
   <div class="sb-nav">
+    ${S.user?`<div class="sb-user"><div class="un">${esc(S.user.name||S.user.username)}</div><div class="ur"><span class="${isAdmin()?'role-admin':'role-user'}">${isAdmin()?'Admin':'User'}</span></div></div>`:''}
     <div class="nav-sec">เมนูหลัก</div>
     ${nav.map(n=>`<div class="ni${S.page===n.id?' active':''}" onclick="goPage('${n.id}')"><span class="ico">${n.ico}</span><span>${n.lbl}</span></div>`).join('')}
     <div class="nav-sec" style="margin-top:14px">ตั้งค่า</div>
-    <div class="ni" onclick="openSetup()"><span class="ico">⚙️</span><span>ตั้งค่าฐานข้อมูล</span></div>
+    ${isAdmin()?`<div class="ni" onclick="openSetup()"><span class="ico">⚙️</span><span>ตั้งค่าฐานข้อมูล</span></div>`:''}
+    <div class="ni" onclick="logout()" style="color:#f87171"><span class="ico">🚪</span><span>ออกจากระบบ</span></div>
   </div>
   <div class="sb-foot">
     <div class="conn-status">
@@ -421,7 +559,7 @@ function renderDash(){
 <div class="ph"><div><h2>Dashboard</h2>
   <p>ภาพรวมสถิติพนักงาน${S.dashCompany!=='all'?` — ${esc(S.dashCompany.replace('บริษัท ','').replace(' จำกัด',''))}`:''} ${S.dashDept!=='all'?`/ แผนก${esc(S.dashDept)}`:''}</p>
 </div>
-  <div class="ph-actions"><button class="btn btn-p" onclick="goPage('form')">+ เพิ่มพนักงาน</button></div>
+  <div class="ph-actions">${isAdmin()?`<button class="btn btn-p" onclick="goPage('form')">+ เพิ่มพนักงาน</button>`:''}</div>
 </div>
 
 <div class="card" style="margin-bottom:20px;padding:14px 18px">
@@ -521,7 +659,7 @@ function renderList(){
   <div><h2>รายชื่อพนักงาน</h2><p>แสดง ${emps.length} จาก ${S.emps.length} คน</p></div>
   <div class="ph-actions">
     <button class="btn btn-g" onclick="loadData()">↻ รีเฟรช</button>
-    <button class="btn btn-p" onclick="goPage('form')">+ เพิ่มพนักงาน</button>
+    ${isAdmin()?`<button class="btn btn-p" onclick="goPage('form')">+ เพิ่มพนักงาน</button>`:''}
   </div>
 </div>
 <div class="tbl-card">
@@ -579,7 +717,7 @@ function renderList(){
       <td><span style="font-size:12px;color:${e.status==='active'?'#0369a1':'#64748b'};font-weight:600">${tenure(e.startDate,e.status==='resigned'?e.resignDate:null)}</span>${e.status==='resigned'?'<br><span style="font-size:10px;color:#94a3b8">ถึงวันลาออก</span>':''}</td>
       <td>${esc(e.supervisor||'-')}</td>
       <td><span class="badge ${e.status==='active'?'ba':'br'}">${e.status==='active'?'พนักงานปัจจุบัน':'ลาออกแล้ว'}</span>${e.status==='resigned'&&e.resignDate?`<br><span style="font-size:11px;color:#94a3b8">${fdate(e.resignDate)}</span>`:''}</td>
-      <td><button class="btn btn-sm btn-ed" onclick="editEmp('${e.id}')" title="แก้ไข">✏️</button></td>
+      <td>${isAdmin()?`<button class="btn btn-sm btn-ed" onclick="editEmp('${e.id}')" title="แก้ไข">✏️</button>`:''}</td>
     </tr>`}).join('')}</tbody>
   </table>`:`<div class="empty"><div class="ei">🔍</div><h3>ไม่พบข้อมูล</h3><p>ลองเปลี่ยนคำค้นหา</p></div>`}
   </div>
@@ -701,7 +839,7 @@ function renderDepts(){
         <td><strong style="color:var(--pd)">${esc(d.name)}</strong></td>
         <td>${d.manager?`<span style="font-weight:600">${esc(d.manager)}</span>`:'-'}</td>
         <td><span style="background:var(--pl);color:var(--pd);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">${cnt} คน</span></td>
-        <td><button class="btn btn-sm btn-ed" onclick="editDept('${d.id}')" title="แก้ไข">✏️</button></td>
+        <td>${isAdmin()?`<button class="btn btn-sm btn-ed" onclick="editDept('${d.id}')" title="แก้ไข">✏️</button>`:''}</td>
       </tr>`;
     }).join('');
   }
@@ -739,7 +877,7 @@ function renderDepts(){
         <td><strong style="color:var(--pd)">${esc(d.name)}</strong></td>
         <td>${d.manager?`<span style="font-weight:600">${esc(d.manager)}</span>`:'-'}</td>
         <td><span style="background:var(--pl);color:var(--pd);padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600">${cnt} คน</span></td>
-        <td><button class="btn btn-sm btn-ed" onclick="editDept('${d.id}')" title="แก้ไข">✏️</button></td>
+        <td>${isAdmin()?`<button class="btn btn-sm btn-ed" onclick="editDept('${d.id}')" title="แก้ไข">✏️</button>`:''}</td>
       </tr>`;
     }).join(''):`<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:14px">ยังไม่มีแผนก</td></tr>`;
     return sectionHdr+rows;
@@ -751,7 +889,7 @@ function renderDepts(){
   return`
 <div class="ph">
   <div><h2>ฐานข้อมูลแผนก</h2><p>แผนกทั้งหมด ${S.depts.length} แผนก</p></div>
-  <button class="btn btn-p" onclick="goPage('dept-form')">+ เพิ่มแผนก</button>
+  ${isAdmin()?`<button class="btn btn-p" onclick="goPage('dept-form')">+ เพิ่มแผนก</button>`:''}
 </div>
 <div class="tbl-card">
   <div class="tbl-toolbar">
@@ -839,13 +977,19 @@ function renderSetup(){
 
 // ── Render ─────────────────────────────────────────────────────
 function render(){
+  if(!S.user){
+    document.getElementById('app').innerHTML=renderLogin();
+    return;
+  }
   let content='';
   if(S.loading){content='<div style="padding:60px;text-align:center;color:#64748b">⏳ กำลังโหลดข้อมูล...</div>'}
   else if(S.page==='dashboard')content=renderDash();
   else if(S.page==='list')content=renderList();
-  else if(S.page==='form')content=renderForm();
+  else if(S.page==='form')content=isAdmin()?renderForm():(S.page='list',renderList());
   else if(S.page==='depts')content=renderDepts();
-  else if(S.page==='dept-form')content=renderDeptForm();
+  else if(S.page==='dept-form')content=isAdmin()?renderDeptForm():(S.page='depts',renderDepts());
+  else if(S.page==='users')content=renderUsers();
+  else if(S.page==='user-form')content=renderUserForm();
   const delModal=S.delId?`<div class="ov" onclick="cancelDel()"><div class="modal" onclick="event.stopPropagation()">
   <h3>⚠️ ยืนยันการลบพนักงาน</h3>
   <p>ต้องการลบข้อมูลพนักงานนี้ออกจากระบบ?<br>การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
@@ -862,19 +1006,28 @@ function render(){
     <button class="btn btn-del" onclick="doDeptDel()">ลบแผนก</button>
   </div>
 </div></div>`:'';
-  const mobHeader=`<div class="mob-header"><button class="ham" onclick="toggleMenu()">☰</button><div class="mh-logo">🏢 HRM System</div><div class="dot ${S.apiUrl&&S.connected?'on':'off'}" style="margin-right:4px"></div><button class="ham" onclick="openSetup()" style="font-size:16px">⚙️</button></div>`;
+  const userDelModal=S.userDelId?`<div class="ov" onclick="cancelUserDel()"><div class="modal" onclick="event.stopPropagation()">
+  <h3>⚠️ ยืนยันการลบผู้ใช้</h3>
+  <p>ต้องการลบผู้ใช้นี้ออกจากระบบ? การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+  <div class="modal-foot"><button class="btn btn-g" onclick="cancelUserDel()">ยกเลิก</button><button class="btn btn-del" onclick="doUserDel()">ลบผู้ใช้</button></div>
+</div></div>`:'';
+  const mobHeader=`<div class="mob-header"><button class="ham" onclick="toggleMenu()">☰</button><div class="mh-logo">🏢 HRM System</div><div class="dot ${S.apiUrl&&S.connected?'on':'off'}" style="margin-right:4px"></div>${isAdmin()?`<button class="ham" onclick="openSetup()" style="font-size:16px">⚙️</button>`:''}</div>`;
   const mobOv=`<div class="mob-ov${S.menuOpen?' open':''}" onclick="closeMenu()"></div>`;
-  const botNav=`<nav class="bot-nav"><div class="bn-items"><button class="bn-item${S.page==='dashboard'?' active':''}" onclick="goPage('dashboard')"><span class="bi">📊</span><span>ภาพรวม</span></button><button class="bn-item${S.page==='list'?' active':''}" onclick="goPage('list')"><span class="bi">👥</span><span>พนักงาน</span></button><button class="bn-item${S.page==='form'?' active':''}" onclick="goPage('form')"><span class="bi">➕</span><span>เพิ่ม</span></button><button class="bn-item${['depts','dept-form'].includes(S.page)?' active':''}" onclick="goPage('depts')"><span class="bi">🏬</span><span>แผนก</span></button></div></nav>`;
-  document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${delModal}${deptDelModal}`;
+  const botNav=`<nav class="bot-nav"><div class="bn-items"><button class="bn-item${S.page==='dashboard'?' active':''}" onclick="goPage('dashboard')"><span class="bi">📊</span><span>ภาพรวม</span></button><button class="bn-item${S.page==='list'?' active':''}" onclick="goPage('list')"><span class="bi">👥</span><span>พนักงาน</span></button>${isAdmin()?`<button class="bn-item${S.page==='form'?' active':''}" onclick="goPage('form')"><span class="bi">➕</span><span>เพิ่ม</span></button>`:''}<button class="bn-item${['depts','dept-form'].includes(S.page)?' active':''}" onclick="goPage('depts')"><span class="bi">🏬</span><span>แผนก</span></button>${isAdmin()?`<button class="bn-item${['users','user-form'].includes(S.page)?' active':''}" onclick="goPage('users')"><span class="bi">👤</span><span>ผู้ใช้</span></button>`:`<button class="bn-item" onclick="logout()"><span class="bi">🚪</span><span>ออก</span></button>`}</div></nav>`;
+  document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${delModal}${deptDelModal}${userDelModal}`;
 }
 
 // ── Event Handlers ─────────────────────────────────────────────
 function goPage(p){
+  if(!isAdmin()&&(p==='form'||p==='dept-form'||p==='user-form'))return;
+  if(!isAdmin()&&p==='users'){p='dashboard'}
   S.page=p;
   S.menuOpen=false;
   if(p!=='form')S.editId=null;
   if(p!=='dept-form')S.deptEditId=null;
-  S.delId=null;S.deptDelId=null;
+  if(p!=='user-form')S.userEditId=null;
+  S.delId=null;S.deptDelId=null;S.userDelId=null;
+  if(p==='users'&&isAdmin()&&!S.users.length)apiUserFetch().then(()=>render());
   render();window.scrollTo(0,0);
 }
 function toggleMenu(){S.menuOpen=!S.menuOpen;render()}
@@ -1023,6 +1176,74 @@ function fillSupervisor(deptName){
   if(inp)inp.value=dept?(dept.manager||''):'';
 }
 
+// ── Auth handlers ──────────────────────────────────────────────
+async function doLogin(ev){
+  ev.preventDefault();
+  const username=document.getElementById('ln-user').value.trim();
+  const password=document.getElementById('ln-pass').value;
+  if(!username||!password){S.loginErr='กรุณากรอก Username และ Password';render();return}
+  S.loginErr='';S.loginLoading=true;render();
+  const res=await apiLogin(username,password);
+  S.loginLoading=false;
+  if(res.success){
+    S.user=res.user;
+    localStorage.setItem('hrm_user',JSON.stringify(S.user));
+    S.loginErr='';
+    render();
+    if(S.apiUrl){
+      S.loading=true;render();
+      const tasks=[apiFetch(),apiDeptFetch()];
+      if(S.user.role==='admin')tasks.push(apiUserFetch());
+      await Promise.all(tasks);
+      S.loading=false;render();
+    }
+  }else{
+    S.loginErr=res.error||'เข้าสู่ระบบไม่สำเร็จ';
+    render();
+  }
+}
+function logout(){
+  S.user=null;
+  localStorage.removeItem('hrm_user');
+  S.page='dashboard';S.menuOpen=false;
+  render();
+}
+// ── User CRUD handlers ─────────────────────────────────────────
+function editUser(id){S.userEditId=id;S.page='user-form';render();window.scrollTo(0,0)}
+function confirmUserDel(id){S.userDelId=id;render()}
+function cancelUserDel(){S.userDelId=null;render()}
+async function doUserDel(){
+  const id=S.userDelId;S.userDelId=null;
+  const res=await apiUserPost({action:'deleteUser',id});
+  if(res.success){S.users=S.users.filter(u=>u.id!==id);toast('ลบผู้ใช้สำเร็จ','ok')}
+  else toast(res.error||'ลบไม่สำเร็จ','err');
+  S.userEditId=null;S.page='users';render();
+}
+async function submitUserForm(ev){
+  ev.preventDefault();
+  const fd=new FormData(ev.target);
+  const isEdit=!!S.userEditId;
+  const username=fd.get('username').trim();
+  const password=fd.get('password');
+  const name=fd.get('name').trim();
+  const role=fd.get('role');
+  if(!isEdit&&!password){toast('กรุณาตั้งรหัสผ่าน','err');return}
+  const user={
+    id:isEdit?S.userEditId:'U'+Date.now().toString(36).toUpperCase(),
+    username,password:password||'',name,role,
+    createdAt:isEdit?(S.users.find(u=>u.id===S.userEditId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+  };
+  const res=await apiUserPost({action:isEdit?'updateUser':'createUser',data:user});
+  if(res.success){
+    await apiUserFetch();
+    toast(isEdit?'แก้ไขผู้ใช้สำเร็จ':'เพิ่มผู้ใช้สำเร็จ','ok');
+    S.userEditId=null;S.page='users';render();
+  }else{
+    toast(res.error||'บันทึกไม่สำเร็จ','err');
+  }
+}
+
 function openSetup(){S.showSetup=true;S.menuOpen=false;render()}
 function closeSetup(){S.showSetup=false;render()}
 async function saveApi(){
@@ -1073,8 +1294,11 @@ S.emps=lload();
 S.depts=dload();
 S.localBackup=backupLoad();
 render();
-if(S.apiUrl){
-  Promise.all([apiFetch(),apiDeptFetch()]).then(()=>render());
+if(S.user&&S.apiUrl){
+  S.loading=true;render();
+  const tasks=[apiFetch(),apiDeptFetch()];
+  if(S.user.role==='admin')tasks.push(apiUserFetch());
+  Promise.all(tasks).then(()=>{S.loading=false;render()});
 }
 </script>
 </body>
