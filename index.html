@@ -424,7 +424,7 @@ function buildChart(year,emps){
 function renderLogin(){
   return`<div class="login-wrap">
   <div class="login-box">
-    <div class="login-logo"><div class="li">🏢</div><h1>HRM System</h1><p>ระบบจัดการข้อมูลพนักงาน</p></div>
+    <div class="login-logo"><div class="li">🏢</div><h1>Human Resourcing Manager</h1><p>ระบบจัดการข้อมูลพนักงาน</p><p style="font-size:11px;color:#94a3b8;margin-top:6px">Powered by Chemtech Innovation Co., Ltd.</p></div>
     ${S.loginErr?`<div class="login-err">❌ ${esc(S.loginErr)}</div>`:''}
     <form onsubmit="doLogin(event)">
       <div class="fg" style="margin-bottom:14px">
@@ -519,7 +519,7 @@ function renderSidebar(){
     ...(isAdmin()?[{id:'users',ico:'👤',lbl:'จัดการผู้ใช้'}]:[]),
   ];
   return`<nav class="sidebar${S.menuOpen?' open':''}">
-  <div class="sb-logo"><div class="li">🏢</div><h1>HRM System</h1><p>ระบบจัดการพนักงาน</p></div>
+  <div class="sb-logo"><div class="li">🏢</div><h1>Human Resourcing Manager</h1><p>ระบบจัดการพนักงาน</p><p style="font-size:10px;color:#475569;margin-top:4px">Powered by Chemtech Innovation Co., Ltd.</p></div>
   <div class="sb-nav">
     ${S.user?`<div class="sb-user"><div class="un">${esc(S.user.name||S.user.username)}</div><div class="ur"><span class="${isAdmin()?'role-admin':'role-user'}">${isAdmin()?'Admin':'User'}</span></div></div>`:''}
     <div class="nav-sec">เมนูหลัก</div>
@@ -664,7 +664,7 @@ function renderDash(){
 
 <div class="chart-card">
   <div class="chart-top">
-    <h3>สถิติการเข้า - ออกของพนักงาน</h3>
+    <h3>สถิติพนักงานใหม่/ลาออก (รายเดือน)</h3>
     <div class="chart-controls">
       <div class="legend">
         <span class="leg"><span class="ldot" style="background:#0ea5e9"></span>รับเข้า</span>
@@ -1081,7 +1081,7 @@ function render(){
   <p>ต้องการลบผู้ใช้นี้ออกจากระบบ? การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
   <div class="modal-foot"><button class="btn btn-g" onclick="cancelUserDel()">ยกเลิก</button><button class="btn btn-del" onclick="doUserDel()">ลบผู้ใช้</button></div>
 </div></div>`:'';
-  const mobHeader=`<div class="mob-header"><button class="ham" onclick="toggleMenu()">☰</button><div class="mh-logo">🏢 HRM System</div><div class="dot ${S.apiUrl&&S.connected?'on':'off'}" style="margin-right:4px"></div>${isAdmin()?`<button class="ham" onclick="openSetup()" style="font-size:16px">⚙️</button>`:''}</div>`;
+  const mobHeader=`<div class="mob-header"><button class="ham" onclick="toggleMenu()">☰</button><div class="mh-logo">🏢 Human Resourcing Manager</div><div class="dot ${S.apiUrl&&S.connected?'on':'off'}" style="margin-right:4px"></div>${isAdmin()?`<button class="ham" onclick="openSetup()" style="font-size:16px">⚙️</button>`:''}</div>`;
   const mobOv=`<div class="mob-ov${S.menuOpen?' open':''}" onclick="closeMenu()"></div>`;
   const botNav=`<nav class="bot-nav"><div class="bn-items"><button class="bn-item${S.page==='dashboard'?' active':''}" onclick="goPage('dashboard')"><span class="bi">📊</span><span>ภาพรวม</span></button><button class="bn-item${S.page==='list'?' active':''}" onclick="goPage('list')"><span class="bi">👥</span><span>พนักงาน</span></button>${isAdmin()?`<button class="bn-item${S.page==='form'?' active':''}" onclick="goPage('form')"><span class="bi">➕</span><span>เพิ่ม</span></button>`:''}<button class="bn-item${['depts','dept-form'].includes(S.page)?' active':''}" onclick="goPage('depts')"><span class="bi">🏬</span><span>แผนก</span></button>${isAdmin()?`<button class="bn-item${['users','user-form'].includes(S.page)?' active':''}" onclick="goPage('users')"><span class="bi">👤</span><span>ผู้ใช้</span></button>`:`<button class="bn-item" onclick="logout()"><span class="bi">🚪</span><span>ออก</span></button>`}</div></nav>`;
   document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${delModal}${deptDelModal}${userDelModal}`;
