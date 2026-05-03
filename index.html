@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HRM – ระบบจัดการข้อมูลพนักงาน</title>
+<title>CHEMTECH HRM</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -22,7 +22,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--txt);min-
 /* ── Sidebar ── */
 .sidebar{width:240px;background:var(--sb);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:width .2s}
 .sb-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
-.sb-logo .li{font-size:26px;margin-bottom:6px}
+.sb-logo .li{margin-bottom:6px}.sb-logo .li img{width:130px;height:auto;display:block}
 .sb-logo h1{font-size:15px;font-weight:700;color:#fff;line-height:1.2}
 .sb-logo p{font-size:11px;color:#64748b;margin-top:2px}
 .sb-nav{flex:1;padding:10px 0;overflow-y:auto}
@@ -139,7 +139,7 @@ textarea{resize:vertical;min-height:72px}
 @media(max-width:1023px){
   .sidebar{width:58px}
   .sb-logo{padding:14px 0;display:flex;justify-content:center;align-items:center}
-  .sb-logo .li{margin:0;font-size:22px}
+  .sb-logo .li{margin:0}.sb-logo .li img{width:36px;height:auto;display:block}
   .sb-logo h1,.sb-logo p,.ni span:not(.ico),.nav-sec,.conn-lbl{display:none}
   .main{margin-left:58px;padding:22px 24px}
   .stats{grid-template-columns:repeat(2,1fr)}
@@ -149,7 +149,7 @@ textarea{resize:vertical;min-height:72px}
   .sidebar{width:240px;transform:translateX(-100%);transition:transform .25s ease;z-index:110}
   .sidebar.open{transform:translateX(0)}
   .sidebar.open .sb-logo{padding:20px 18px;display:flex;flex-direction:column;align-items:flex-start}
-  .sidebar.open .sb-logo .li{font-size:26px;margin-bottom:6px}
+  .sidebar.open .sb-logo .li{margin-bottom:6px}.sidebar.open .sb-logo .li img{width:130px;height:auto}
   .sidebar.open .sb-logo h1,.sidebar.open .sb-logo p{display:block}
   .sidebar.open .ni span:not(.ico),.sidebar.open .nav-sec,.sidebar.open .conn-lbl{display:block}
   .mob-header{display:flex}
@@ -181,7 +181,7 @@ textarea{resize:vertical;min-height:72px}
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--sb);padding:20px}
 .login-box{background:#fff;border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
 .login-logo{text-align:center;margin-bottom:28px}
-.login-logo .li{font-size:52px;line-height:1;margin-bottom:10px}
+.login-logo .li{line-height:1;margin-bottom:10px}.login-logo .li img{width:130px;height:auto;display:inline-block}
 .login-logo h1{font-size:22px;font-weight:700;color:var(--sb)}
 .login-logo p{font-size:13px;color:var(--muted);margin-top:4px}
 .login-err{background:#ffe4e6;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;text-align:center}
@@ -211,6 +211,7 @@ const S={
   editId:null,
   search:'',
   filterSt:'all',
+  filterEmpType:'all',
   filterCompany:'all',
   filterDept:'all',
   filterPosition:'all',
@@ -424,7 +425,7 @@ function buildChart(year,emps){
 function renderLogin(){
   return`<div class="login-wrap">
   <div class="login-box">
-    <div class="login-logo"><div class="li">🏢</div><h1>Human Resourcing Manager</h1><p>ระบบจัดการข้อมูลพนักงาน</p><p style="font-size:11px;color:#94a3b8;margin-top:6px">Powered by Chemtech Groups</p></div>
+    <div class="login-logo"><div class="li"><img src="logo.png" alt="CHEMTECH"></div><h1>CHEMTECH HRM</h1><p>ระบบจัดการข้อมูลพนักงาน</p><p style="font-size:11px;color:#94a3b8;margin-top:6px">Powered by Chemtech Groups</p></div>
     ${S.loginErr?`<div class="login-err">❌ ${esc(S.loginErr)}</div>`:''}
     <form onsubmit="doLogin(event)">
       <div class="fg" style="margin-bottom:14px">
@@ -519,7 +520,7 @@ function renderSidebar(){
     ...(isAdmin()?[{id:'users',ico:'👤',lbl:'จัดการผู้ใช้'}]:[]),
   ];
   return`<nav class="sidebar${S.menuOpen?' open':''}">
-  <div class="sb-logo"><div class="li">🏢</div><h1>Human Resourcing Manager</h1><p>ระบบจัดการพนักงาน</p></div>
+  <div class="sb-logo"><div class="li"><img src="logo.png" alt="CHEMTECH"></div><h1>CHEMTECH HRM</h1><p>ระบบจัดการพนักงาน</p></div>
   <div class="sb-nav">
     ${S.user?`<div class="sb-user"><div class="un">${esc(S.user.name||S.user.username)}</div><div class="ur"><span class="${isAdmin()?'role-admin':'role-user'}">${isAdmin()?'Admin':'User'}</span></div></div>`:''}
     <div class="nav-sec">เมนูหลัก</div>
@@ -605,50 +606,15 @@ function renderDash(){
   S.emps.forEach(e=>{if(e.startDate)yrs.add(pdate(e.startDate)?.getFullYear());if(e.resignDate)yrs.add(pdate(e.resignDate)?.getFullYear())});
   const yopts=[...yrs].filter(Boolean).sort((a,b)=>a-b).map(y=>`<option value="${y}"${y===S.dashYear?' selected':''}>${y}</option>`).join('');
 
-  // Dropdown บริษัท
-  const copts=COMPANIES.map(c=>`<option value="${esc(c)}"${S.dashCompany===c?' selected':''}>${esc(c)}</option>`).join('');
-
-  // Dropdown แผนก — กรองตามบริษัทที่เลือก
-  const filteredDepts=S.depts.filter(d=>S.dashCompany==='all'||d.company===S.dashCompany);
-  const deptNames=[...new Set(filteredDepts.map(d=>d.name))].sort((a,b)=>a.localeCompare(b,'th'));
-  const dopts=deptNames.map(n=>`<option value="${n}"${S.dashDept===n?' selected':''}>${n}</option>`).join('');
-
   // พนักงานเข้าใหม่ล่าสุด (เฉพาะ active เรียงตามวันเริ่มงานล่าสุด)
   const recent=[...emps].filter(e=>e.status==='active')
     .sort((a,b)=>{const da=pdate(a.startDate),db=pdate(b.startDate);return(db||0)-(da||0)}).slice(0,5);
 
-  const hasFilter=S.dashCompany!=='all'||S.dashDept!=='all';
-
   return`
 <div class="ph"><div><h2>Dashboard</h2>
-  <p>ภาพรวมสถิติพนักงาน${S.dashCompany!=='all'?` — ${esc(S.dashCompany.replace('บริษัท ','').replace(' จำกัด',''))}`:''} ${S.dashDept!=='all'?`/ แผนก${esc(S.dashDept)}`:''}</p>
+  <p>ภาพรวมสถิติพนักงาน</p>
 </div>
   <div class="ph-actions">${isAdmin()?`<button class="btn btn-p" onclick="goPage('form')">+ เพิ่มพนักงาน</button>`:''}</div>
-</div>
-
-<div class="card" style="margin-bottom:20px;padding:14px 18px">
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <span style="font-size:13px;font-weight:600;color:var(--muted)">กรองข้อมูล:</span>
-    <div style="display:flex;align-items:center;gap:6px">
-      <label style="font-size:12px;color:var(--muted);font-weight:600">บริษัท</label>
-      <select class="yr" style="max-width:240px" onchange="setDashCompany(this.value)">
-        <option value="all"${S.dashCompany==='all'?' selected':''}>ทุกบริษัท</option>
-        ${copts}
-      </select>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <label style="font-size:12px;color:var(--muted);font-weight:600">แผนก</label>
-      <select class="yr" onchange="setDashDept(this.value)">
-        <option value="all"${S.dashDept==='all'?' selected':''}>ทุกแผนก</option>
-        ${dopts}
-      </select>
-    </div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <label style="font-size:12px;color:var(--muted);font-weight:600">ปี (กราฟ)</label>
-      <select class="yr" onchange="setDashYear(this.value)">${yopts}</select>
-    </div>
-    ${hasFilter?`<button class="btn btn-sm btn-g" onclick="clearDashFilter()" style="font-size:11px">✕ ล้างตัวกรอง</button>`:''}
-  </div>
 </div>
 
 <div class="stats">
@@ -705,6 +671,13 @@ function renderList(){
   if(S.filterCompany!=='all')baseEmps=baseEmps.filter(e=>e.company===S.filterCompany);
   if(S.filterDept!=='all')baseEmps=baseEmps.filter(e=>e.department===S.filterDept);
   if(S.filterPosition!=='all')baseEmps=baseEmps.filter(e=>e.position===S.filterPosition);
+  // คำนวณช่วงปีปัจจุบัน (21/12 ปีก่อน → 20/12 ปีนี้)
+  const _now=new Date(),_yr=_now.getFullYear();
+  const _pStart=new Date(_yr-1,11,21),_pEnd=new Date(_yr,11,20);
+  const cntOld=baseEmps.filter(e=>{const s=pdate(e.startDate);return s&&s<_pStart}).length;
+  const cntNew=baseEmps.filter(e=>{const s=pdate(e.startDate);return s&&s>=_pStart&&s<=_pEnd}).length;
+  if(S.filterEmpType==='old')baseEmps=baseEmps.filter(e=>{const s=pdate(e.startDate);return s&&s<_pStart});
+  else if(S.filterEmpType==='new')baseEmps=baseEmps.filter(e=>{const s=pdate(e.startDate);return s&&s>=_pStart&&s<=_pEnd});
   let emps=S.filterSt!=='all'?baseEmps.filter(e=>e.status===S.filterSt):[...baseEmps];
   emps.sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
   const cntAll=baseEmps.length;
@@ -723,7 +696,7 @@ function renderList(){
   const POSITIONS=['พนักงาน','หัวหน้าทีม','หัวหน้างาน','ผู้ช่วยผู้จัดการแผนก','ผู้จัดการแผนก','ผู้จัดการทั่วไป','กรรมการผู้จัดการ'];
   const popts=POSITIONS.map(p=>`<option value="${esc(p)}"${S.filterPosition===p?' selected':''}>${esc(p)}</option>`).join('');
 
-  const hasFilter=S.filterCompany!=='all'||S.filterDept!=='all'||S.filterPosition!=='all';
+  const hasFilter=S.filterCompany!=='all'||S.filterDept!=='all'||S.filterPosition!=='all'||S.filterEmpType!=='all';
 
   return`
 <div class="ph">
@@ -743,6 +716,10 @@ function renderList(){
         <button class="chip${S.filterSt==='all'?' active':''}" onclick="setFSt('all')">ทั้งหมด (${cntAll})</button>
         <button class="chip${S.filterSt==='active'?' active':''}" onclick="setFSt('active')">ปัจจุบัน (${cntActive})</button>
         <button class="chip${S.filterSt==='resigned'?' active':''}" onclick="setFSt('resigned')">ลาออกแล้ว (${cntResigned})</button>
+        <span style="width:1px;background:var(--bdr);align-self:stretch;margin:0 4px"></span>
+        <button class="chip${S.filterEmpType==='all'?' active':''}" onclick="setFEmpType('all')">ทุกประเภท</button>
+        <button class="chip${S.filterEmpType==='old'?' active':''}" onclick="setFEmpType('old')">พนักงานเดิม (${cntOld})</button>
+        <button class="chip${S.filterEmpType==='new'?' active':''}" onclick="setFEmpType('new')">พนักงานใหม่ (${cntNew})</button>
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:4px;border-top:1px solid var(--bdr)">
@@ -1116,7 +1093,8 @@ function setListCompany(v){
 }
 function setListDept(v){S.filterDept=v;render()}
 function setListPosition(v){S.filterPosition=v;render()}
-function clearListFilter(){S.filterCompany='all';S.filterDept='all';S.filterPosition='all';render()}
+function setFEmpType(v){S.filterEmpType=v;render()}
+function clearListFilter(){S.filterCompany='all';S.filterDept='all';S.filterPosition='all';S.filterEmpType='all';render()}
 function setDashYear(v){S.dashYear=parseInt(v);render()}
 function setDashCompany(v){
   S.dashCompany=v;
