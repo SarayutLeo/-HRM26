@@ -647,11 +647,11 @@ function renderDash(){
   <div class="sc sc-g"><div class="sc-ic ic-g">✅</div><div class="sc-info"><h3>${active}</h3><div class="lb">พนักงานปัจจุบัน</div></div></div>
   <div class="sc sc-b"><div class="sc-ic ic-b">🏛️</div><div class="sc-info"><h3>${activeOld}</h3><div class="lb">พนักงานเดิม</div><div style="font-size:10px;color:#1d4ed8;font-weight:700;margin-top:3px">${pctActive(activeOld)} ของพนักงานปัจจุบัน</div></div></div>
   <div class="sc sc-b"><div class="sc-ic ic-b">🆕</div><div class="sc-info"><h3>${newYear}</h3><div class="lb">พนักงานใหม่</div><div style="font-size:10px;color:#1d4ed8;font-weight:700;margin-top:3px">${pctActive(newYear)} ของพนักงานปัจจุบัน</div></div></div>
+  <div class="sc sc-t"><div class="sc-ic ic-t">✔️</div><div class="sc-info"><h3>${passedProbation}</h3><div class="lb">พนักงานใหม่ (ผ่านทดลองงาน)</div><div style="font-size:10px;color:#0f766e;font-weight:700;margin-top:3px">${newYear>0?(passedProbation/newYear*100).toFixed(1)+'%':'—'} ของพนักงานใหม่</div></div></div>
   <div class="sc sc-r"><div class="sc-ic ic-r">🚪</div><div class="sc-info"><h3>${resignYear}</h3><div class="lb">พนักงานลาออก</div><div style="font-size:10px;color:#dc2626;font-weight:700;margin-top:3px">${pctActive(resignYear)} ของพนักงานปัจจุบัน</div></div></div>
   <div class="sc sc-r"><div class="sc-ic ic-r">👤</div><div class="sc-info"><h3>${resignOld}</h3><div class="lb">พนักงานเดิมลาออก</div><div style="font-size:10px;color:#dc2626;font-weight:700;margin-top:3px">${pctOld(resignOld)} ของพนักงานเดิม</div></div></div>
   <div class="sc sc-y"><div class="sc-ic ic-y">⏱️</div><div class="sc-info"><h3>${probationResign}</h3><div class="lb">ลาออกช่วงทดลองงาน</div><div style="font-size:10px;color:#d97706;font-weight:700;margin-top:3px">${pctNew(probationResign)} ของพนักงานใหม่</div></div></div>
   <div class="sc sc-v"><div class="sc-ic ic-v">🏁</div><div class="sc-info"><h3>${afterProbation}</h3><div class="lb">ลาออกหลังผ่านทดลองงาน</div><div style="font-size:10px;color:#7c3aed;font-weight:700;margin-top:3px">${pctNew(afterProbation)} ของพนักงานใหม่</div></div></div>
-  <div class="sc sc-t"><div class="sc-ic ic-t">✔️</div><div class="sc-info"><h3>${passedProbation}</h3><div class="lb">พนักงานใหม่ผ่านทดลองงาน</div><div style="font-size:10px;color:#0f766e;font-weight:700;margin-top:3px">${pctNew(passedProbation)} ของพนักงานใหม่</div></div></div>
 </div>
 
 <div class="chart-card">
