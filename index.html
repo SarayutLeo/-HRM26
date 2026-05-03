@@ -43,13 +43,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--txt);min-
 .ph p{font-size:13px;color:var(--muted);margin-top:2px}
 .ph-actions{display:flex;gap:8px;flex-shrink:0}
 /* ── Stats ── */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px}
 .sc{background:var(--white);border-radius:var(--r);padding:18px 16px;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
 .sc-ic{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.ic-b{background:#dbeafe}.ic-g{background:#d1fae5}.ic-r{background:#ffe4e6}.ic-y{background:#fef3c7}
+.ic-b{background:#dbeafe}.ic-g{background:#d1fae5}.ic-r{background:#ffe4e6}.ic-y{background:#fef3c7}.ic-v{background:#ede9fe}
 .sc-info h3{font-size:26px;font-weight:700;line-height:1;margin-bottom:3px}
 .sc-info .lb{font-size:12px;color:var(--muted);font-weight:500}
-.sc-b h3{color:#1d4ed8}.sc-g h3{color:#059669}.sc-r h3{color:#dc2626}.sc-y h3{color:#d97706}
+.sc-b h3{color:#1d4ed8}.sc-g h3{color:#059669}.sc-r h3{color:#dc2626}.sc-y h3{color:#d97706}.sc-v h3{color:#7c3aed}
 /* ── Card ── */
 .card{background:var(--white);border-radius:var(--r);padding:20px;box-shadow:var(--sh);margin-bottom:20px}
 /* ── Chart ── */
@@ -547,18 +547,30 @@ function renderDash(){
   if(S.dashCompany!=='all')emps=emps.filter(e=>e.company===S.dashCompany);
   if(S.dashDept!=='all')emps=emps.filter(e=>e.department===S.dashDept);
 
-  // Stats 4 หัวข้อ
+  // Stats 6 หัวข้อ
   const active=emps.filter(e=>e.status==='active').length;
   const newYear=emps.filter(e=>{const d=pdate(e.startDate);return d&&d.getFullYear()===thisYear}).length;
   const resignYear=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const d=pdate(e.resignDate);return d&&d.getFullYear()===thisYear;
   }).length;
+  const totalResigned=emps.filter(e=>e.status==='resigned').length;
+  const pct=n=>totalResigned>0?(n/totalResigned*100).toFixed(1)+'%':'—';
+  const resignOld=emps.filter(e=>{
+    if(e.status!=='resigned')return false;
+    const s=pdate(e.startDate);return s&&s<EMP_CUTOFF;
+  }).length;
   const probationResign=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const s=pdate(e.startDate),r=pdate(e.resignDate);
     if(!s||!r)return false;
     return Math.floor((r-s)/86400000)<119;
+  }).length;
+  const afterProbation=emps.filter(e=>{
+    if(e.status!=='resigned')return false;
+    const s=pdate(e.startDate),r=pdate(e.resignDate);
+    if(!s||!r)return false;
+    return Math.floor((r-s)/86400000)>=119;
   }).length;
 
   // ปีสำหรับ chart dropdown
@@ -616,7 +628,9 @@ function renderDash(){
   <div class="sc sc-g"><div class="sc-ic ic-g">✅</div><div class="sc-info"><h3>${active}</h3><div class="lb">พนักงานปัจจุบัน</div></div></div>
   <div class="sc sc-b"><div class="sc-ic ic-b">🆕</div><div class="sc-info"><h3>${newYear}</h3><div class="lb">พนักงานเข้าใหม่ปี ${thisYear}</div></div></div>
   <div class="sc sc-r"><div class="sc-ic ic-r">🚪</div><div class="sc-info"><h3>${resignYear}</h3><div class="lb">พนักงานลาออกปี ${thisYear}</div></div></div>
-  <div class="sc sc-y"><div class="sc-ic ic-y">⏱️</div><div class="sc-info"><h3>${probationResign}</h3><div class="lb">ลาออกช่วงทดลองงาน</div></div></div>
+  <div class="sc sc-r"><div class="sc-ic ic-r">👤</div><div class="sc-info"><h3>${resignOld} <span style="font-size:13px;font-weight:500;color:#94a3b8">${pct(resignOld)}</span></h3><div class="lb">พนักงานเดิมลาออก</div></div></div>
+  <div class="sc sc-y"><div class="sc-ic ic-y">⏱️</div><div class="sc-info"><h3>${probationResign} <span style="font-size:13px;font-weight:500;color:#94a3b8">${pct(probationResign)}</span></h3><div class="lb">ลาออกช่วงทดลองงาน</div></div></div>
+  <div class="sc sc-v"><div class="sc-ic ic-v">🏁</div><div class="sc-info"><h3>${afterProbation} <span style="font-size:13px;font-weight:500;color:#94a3b8">${pct(afterProbation)}</span></h3><div class="lb">ลาออกหลังผ่านทดลองงาน</div></div></div>
 </div>
 
 <div class="chart-card">
