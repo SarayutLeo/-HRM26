@@ -582,6 +582,7 @@ function renderDash(){
     if(e.status!=='resigned')return false;
     const s=pdate(e.startDate),r=pdate(e.resignDate);
     if(!s||!r)return false;
+    if(r<periodStart||r>periodEnd)return false;
     return Math.floor((r-s)/86400000)<119;
   }).length;
   // ลาออกหลังผ่านทดลองงาน (>= 119 วัน, เฉพาะพนักงานใหม่)
