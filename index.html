@@ -572,12 +572,12 @@ function renderDash(){
     if(!s||!r)return false;
     return Math.floor((r-s)/86400000)<119;
   }).length;
-  // ลาออกหลังผ่านทดลองงาน (>= 119 วัน)
+  // ลาออกหลังผ่านทดลองงาน (>= 119 วัน, เฉพาะพนักงานใหม่)
   const afterProbation=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const s=pdate(e.startDate),r=pdate(e.resignDate);
     if(!s||!r)return false;
-    return Math.floor((r-s)/86400000)>=119;
+    return s>=EMP_CUTOFF&&Math.floor((r-s)/86400000)>=119;
   }).length;
 
   // ปีสำหรับ chart dropdown
