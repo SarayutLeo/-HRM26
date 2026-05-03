@@ -181,7 +181,7 @@ textarea{resize:vertical;min-height:72px}
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--sb);padding:20px}
 .login-box{background:#fff;border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
 .login-logo{text-align:center;margin-bottom:28px}
-.login-logo .li{line-height:1;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--bdr)}.login-logo .li img{width:203px;height:auto;display:inline-block}
+.login-logo .li{line-height:1;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--bdr)}.login-logo .li img{width:305px;height:auto;display:inline-block}
 .login-logo h1{font-size:22px;font-weight:700;color:var(--sb)}
 .login-logo p{font-size:13px;color:var(--muted);margin-top:4px}
 .login-err{background:#ffe4e6;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;text-align:center}
@@ -425,7 +425,7 @@ function buildChart(year,emps){
 function renderLogin(){
   return`<div class="login-wrap">
   <div class="login-box">
-    <div class="login-logo"><div class="li"><img src="logo.png" alt="CHEMTECH"></div><h1>CHEMTECH HRM</h1><p>ระบบจัดการข้อมูลพนักงาน</p><p style="font-size:11px;color:#94a3b8;margin-top:6px">Powered by Chemtech Groups</p></div>
+    <div class="login-logo"><div class="li"><img src="Logo-login.png" alt="CHEMTECH"></div><h1>CHEMTECH HRM</h1><p>ระบบจัดการข้อมูลพนักงาน</p><p style="font-size:11px;color:#94a3b8;margin-top:6px">Powered by Chemtech Groups</p></div>
     ${S.loginErr?`<div class="login-err">❌ ${esc(S.loginErr)}</div>`:''}
     <form onsubmit="doLogin(event)">
       <div class="fg" style="margin-bottom:14px">
