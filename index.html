@@ -43,7 +43,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--txt);min-
 .ph p{font-size:13px;color:var(--muted);margin-top:2px}
 .ph-actions{display:flex;gap:8px;flex-shrink:0}
 /* ── Stats ── */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:22px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}
 .sc{background:var(--white);border-radius:var(--r);padding:18px 16px;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
 .sc-ic{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .ic-b{background:#dbeafe}.ic-g{background:#d1fae5}.ic-r{background:#ffe4e6}.ic-y{background:#fef3c7}
@@ -362,18 +362,26 @@ function toast(msg,type=''){
 }
 
 // ── Chart ──────────────────────────────────────────────────────
+// วันที่แบ่งพนักงานเดิม / พนักงานใหม่
+const EMP_CUTOFF=new Date('2025-12-21T00:00:00');
+
 function buildChart(year,emps){
   if(!emps)emps=S.emps;
-  const hi=new Array(12).fill(0),re=new Array(12).fill(0);
+  const hi=new Array(12).fill(0);
+  const reOld=new Array(12).fill(0); // พนักงานเดิม (เริ่มก่อน 21/12/2025)
+  const reNew=new Array(12).fill(0); // พนักงานใหม่ (เริ่มตั้งแต่ 21/12/2025)
   emps.forEach(e=>{
     const sd=pdate(e.startDate);
     if(sd&&sd.getFullYear()===year)hi[sd.getMonth()]++;
     if(e.status==='resigned'&&e.resignDate){
       const rd=pdate(e.resignDate);
-      if(rd&&rd.getFullYear()===year)re[rd.getMonth()]++;
+      if(rd&&rd.getFullYear()===year){
+        if(sd&&sd<EMP_CUTOFF)reOld[rd.getMonth()]++;
+        else reNew[rd.getMonth()]++;
+      }
     }
   });
-  const maxV=Math.max(...hi,...re,5);
+  const maxV=Math.max(...hi,...reOld.map((v,i)=>v+reNew[i]),5);
   const rmax=Math.ceil(maxV/5)*5;
   const W=820,H=170,PL=36,PB=24,cH=H-PB-8,cW=W-PL-10;
   const colW=cW/12;const bW=Math.min(colW*0.36,18);
@@ -385,12 +393,23 @@ function buildChart(year,emps){
   }
   for(let i=0;i<12;i++){
     const cx=PL+(i+0.5)*colW;const bY=8+cH;
-    const hH=hi[i]?(hi[i]/rmax)*cH:0;const rH=re[i]?(re[i]/rmax)*cH:0;
+    const hH=hi[i]?(hi[i]/rmax)*cH:0;
+    const roH=reOld[i]?(reOld[i]/rmax)*cH:0;
+    const rnH=reNew[i]?(reNew[i]/rmax)*cH:0;
+    const rTotal=reOld[i]+reNew[i];
+    const rTotalH=roH+rnH;
     const hx=cx-bW-1,rx=cx+1;
+    // แท่งรับเข้า (น้ำเงิน)
     if(hi[i]>0){bars+=`<rect x="${hx}" y="${bY-hH}" width="${bW}" height="${hH}" rx="3" fill="#0ea5e9"/>`;bars+=`<text x="${hx+bW/2}" y="${bY-hH-4}" text-anchor="middle" font-size="9" fill="#0284c7" font-weight="700">${hi[i]}</text>`}
     else{bars+=`<rect x="${hx}" y="${bY-2}" width="${bW}" height="2" rx="1" fill="#e2e8f0"/>`}
-    if(re[i]>0){bars+=`<rect x="${rx}" y="${bY-rH}" width="${bW}" height="${rH}" rx="3" fill="#f43f5e"/>`;bars+=`<text x="${rx+bW/2}" y="${bY-rH-4}" text-anchor="middle" font-size="9" fill="#e11d48" font-weight="700">${re[i]}</text>`}
-    else{bars+=`<rect x="${rx}" y="${bY-2}" width="${bW}" height="2" rx="1" fill="#e2e8f0"/>`}
+    // แท่งลาออก stacked (เดิม=แดง ล่าง, ใหม่=ส้ม บน)
+    if(rTotal>0){
+      // วาด base ด้วยสีแดง (พนักงานเดิม) เต็มความสูงรวม
+      bars+=`<rect x="${rx}" y="${bY-rTotalH}" width="${bW}" height="${rTotalH}" rx="3" fill="#f43f5e"/>`;
+      // วาดทับส่วนบนด้วยสีส้ม (พนักงานใหม่)
+      if(rnH>0)bars+=`<rect x="${rx}" y="${bY-rTotalH}" width="${bW}" height="${rnH}" rx="3" fill="#f97316"/>`;
+      bars+=`<text x="${rx+bW/2}" y="${bY-rTotalH-4}" text-anchor="middle" font-size="9" fill="#9f1239" font-weight="700">${rTotal}</text>`;
+    }else{bars+=`<rect x="${rx}" y="${bY-2}" width="${bW}" height="2" rx="1" fill="#e2e8f0"/>`}
     bars+=`<text x="${cx}" y="${bY+16}" text-anchor="middle" font-size="10" fill="#64748b">${MTH[i]}</text>`;
   }
   return`<svg viewBox="0 0 ${W} ${H+10}" style="width:100%;height:auto;display:block;overflow:visible">
@@ -528,12 +547,18 @@ function renderDash(){
   if(S.dashCompany!=='all')emps=emps.filter(e=>e.company===S.dashCompany);
   if(S.dashDept!=='all')emps=emps.filter(e=>e.department===S.dashDept);
 
-  // Stats 3 หัวข้อ
+  // Stats 4 หัวข้อ
   const active=emps.filter(e=>e.status==='active').length;
   const newYear=emps.filter(e=>{const d=pdate(e.startDate);return d&&d.getFullYear()===thisYear}).length;
   const resignYear=emps.filter(e=>{
     if(e.status!=='resigned')return false;
     const d=pdate(e.resignDate);return d&&d.getFullYear()===thisYear;
+  }).length;
+  const probationResign=emps.filter(e=>{
+    if(e.status!=='resigned')return false;
+    const s=pdate(e.startDate),r=pdate(e.resignDate);
+    if(!s||!r)return false;
+    return Math.floor((r-s)/86400000)<119;
   }).length;
 
   // ปีสำหรับ chart dropdown
@@ -591,6 +616,7 @@ function renderDash(){
   <div class="sc sc-g"><div class="sc-ic ic-g">✅</div><div class="sc-info"><h3>${active}</h3><div class="lb">พนักงานปัจจุบัน</div></div></div>
   <div class="sc sc-b"><div class="sc-ic ic-b">🆕</div><div class="sc-info"><h3>${newYear}</h3><div class="lb">พนักงานเข้าใหม่ปี ${thisYear}</div></div></div>
   <div class="sc sc-r"><div class="sc-ic ic-r">🚪</div><div class="sc-info"><h3>${resignYear}</h3><div class="lb">พนักงานลาออกปี ${thisYear}</div></div></div>
+  <div class="sc sc-y"><div class="sc-ic ic-y">⏱️</div><div class="sc-info"><h3>${probationResign}</h3><div class="lb">ลาออกช่วงทดลองงาน</div></div></div>
 </div>
 
 <div class="chart-card">
@@ -599,7 +625,8 @@ function renderDash(){
     <div class="chart-controls">
       <div class="legend">
         <span class="leg"><span class="ldot" style="background:#0ea5e9"></span>รับเข้า</span>
-        <span class="leg"><span class="ldot" style="background:#f43f5e"></span>ลาออก</span>
+        <span class="leg"><span class="ldot" style="background:#f43f5e"></span>ลาออก (พนักงานเดิม)</span>
+        <span class="leg"><span class="ldot" style="background:#f97316"></span>ลาออก (พนักงานใหม่)</span>
       </div>
       <select class="yr" onchange="setDashYear(this.value)">${yopts}</select>
     </div>
