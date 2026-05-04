@@ -37,8 +37,8 @@ const USER_LABELS  = ['ID', 'Username', 'Password', 'Role', 'ชื่อ-นา
 
 // ── Sheet: ใบเตือน ────────────────────────────────────────────
 const SHEET_WARNING  = 'ใบเตือน';
-const WARNING_HEADERS = ['id', 'date', 'type', 'topic', 'employeeId', 'details', 'punishment', 'createdAt', 'updatedAt'];
-const WARNING_LABELS  = ['ID', 'วันที่ใบเตือน', 'ประเภทใบเตือน', 'หัวข้อใบเตือน', 'รหัสพนักงาน', 'รายละเอียดเหตุการณ์', 'บทลงโทษ', 'วันที่สร้าง', 'วันที่แก้ไข'];
+const WARNING_HEADERS = ['id', 'warningNo', 'date', 'type', 'topic', 'employeeId', 'investigator', 'details', 'punishment', 'createdAt', 'updatedAt'];
+const WARNING_LABELS  = ['ID', 'เลขที่ใบเตือน', 'วันที่ใบเตือน', 'ระดับการตักเตือน', 'หัวข้อใบเตือน', 'รหัสพนักงาน', 'ผู้สอบสวนเหตุการณ์', 'รายละเอียดเหตุการณ์', 'บทลงโทษ', 'วันที่สร้าง', 'วันที่แก้ไข'];
 
 // ── Sheet: ประวัติอบรม ─────────────────────────────────────────
 const SHEET_TRAINING  = 'ประวัติอบรม';
@@ -111,7 +111,7 @@ function getUserSheet() {
   return s;
 }
 function getWarningSheet() {
-  const s = initSheet(SHEET_WARNING, WARNING_LABELS, [140,110,140,200,140,400,200,160,160]);
+  const s = initSheet(SHEET_WARNING, WARNING_LABELS, [140,120,110,180,200,140,150,400,200,160,160]);
   ensureColumns(s, WARNING_LABELS);
   return s;
 }

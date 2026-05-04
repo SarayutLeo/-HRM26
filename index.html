@@ -1076,11 +1076,13 @@ function renderEmpWarnings(empId){
     ${isAdmin()?`<button class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;padding:6px 12px;border-radius:7px;cursor:pointer;font:13px 'Sarabun',sans-serif" onclick="goWarningForm(null,'${empId}')">+ บันทึกใบเตือน</button>`:''}
   </div>
   ${list.length?`<div class="tbl-wrap"><table>
-    <thead><tr><th>วันที่</th><th>ระดับการตักเตือน</th><th>◆ หัวข้อใบเตือน ◆</th><th>บทลงโทษ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <thead><tr><th>เลขที่</th><th>วันที่</th><th>ระดับการตักเตือน</th><th>◆ หัวข้อใบเตือน ◆</th><th>ผู้สอบสวน</th><th>บทลงโทษ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
     <tbody>${list.map(w=>`<tr>
+      <td style="font-size:12px;color:#64748b;white-space:nowrap">${esc(w.warningNo||'-')}</td>
       <td style="white-space:nowrap;font-size:13px">${fdate(w.date)}</td>
-      <td><span style="background:${typeColor[w.type]||'#64748b'}22;color:${typeColor[w.type]||'#64748b'};padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700">${esc(w.type||'-')}</span></td>
+      <td><span style="background:${typeColor[w.type]||'#64748b'}22;color:${typeColor[w.type]||'#64748b'};padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block">${esc(w.type||'-')}</span></td>
       <td><strong style="color:#dc2626">◆ ${esc(w.topic)} ◆</strong></td>
+      <td style="font-size:13px">${esc(w.investigator||'-')}</td>
       <td style="font-size:12px">${esc(w.punishment||'-')}</td>
       ${isAdmin()?`<td><button class="btn btn-sm btn-ed" onclick="editWarning('${w.id}')">✏️</button></td>`:''}
     </tr>`).join('')}</tbody>
@@ -1112,15 +1114,16 @@ function renderWarning(){
   </div>
   <div class="tbl-wrap">
   ${list.length?`<table>
-    <thead><tr><th>วันที่</th><th>ระดับการตักเตือน</th><th>◆ หัวข้อใบเตือน ◆</th><th>พนักงาน</th><th>รายละเอียด</th><th>บทลงโทษ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <thead><tr><th>เลขที่</th><th>วันที่</th><th>ระดับการตักเตือน</th><th>◆ หัวข้อใบเตือน ◆</th><th>พนักงาน</th><th>ผู้สอบสวน</th><th>บทลงโทษ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
     <tbody>${list.map(w=>{
       const emp=S.emps.find(e=>e.id===w.employeeId);
       return`<tr>
+        <td style="font-size:12px;color:#64748b;white-space:nowrap">${esc(w.warningNo||'-')}</td>
         <td style="white-space:nowrap;font-size:13px">${fdate(w.date)}</td>
-        <td><span style="background:${typeColor[w.type]||'#64748b'}22;color:${typeColor[w.type]||'#64748b'};padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap">${esc(w.type||'-')}</span></td>
+        <td><span style="background:${typeColor[w.type]||'#64748b'}22;color:${typeColor[w.type]||'#64748b'};padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;display:inline-block">${esc(w.type||'-')}</span></td>
         <td><strong style="color:#dc2626">◆ ${esc(w.topic)} ◆</strong></td>
         <td>${emp?`<strong>${esc(emp.fullName)}</strong><br><span style="font-size:11px;color:#64748b">${esc(emp.empId)}</span>`:esc(w.employeeId||'-')}</td>
-        <td style="font-size:12px;max-width:200px">${esc(w.details||'-')}</td>
+        <td style="font-size:13px">${esc(w.investigator||'-')}</td>
         <td style="font-size:12px">${esc(w.punishment||'-')}</td>
         ${isAdmin()?`<td style="white-space:nowrap">
           <button class="btn btn-sm btn-ed" onclick="editWarning('${w.id}')">✏️</button>
@@ -1154,27 +1157,45 @@ function renderWarningForm(){
   </div>
   <button class="btn btn-g" onclick="goPage('warning')">← กลับ</button>
 </div>
-<form class="form-card" onsubmit="submitWarningForm(event)">
-  <div class="form-grid">
-    <div class="fg"><label class="lb">วันที่ใบเตือน <span class="req">*</span></label>
-      <input type="date" name="date" value="${esc(toInputDate(w.date))}" required></div>
-    <div class="fg" style="grid-column:1/-1"><label class="lb">ระดับการตักเตือน <span class="req">*</span></label>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px" onclick="render()">
-        ${typeRadios}
-      </div></div>
-    <div class="fg" style="grid-column:1/-1"><label class="lb" style="color:#dc2626;font-weight:700">◆ หัวข้อใบเตือน ◆ <span class="req">*</span></label>
-      <input type="text" name="topic" value="${esc(w.topic||'')}" placeholder="ระบุหัวข้อใบเตือน" required style="border-color:#dc2626"></div>
-    <div class="fg" style="grid-column:1/-1"><label class="lb">พนักงาน <span class="req">*</span></label>
-      <select name="employeeId" required>
-        <option value="">-- เลือกพนักงาน --</option>
-        ${empOpts}
-      </select></div>
-    <div class="fg" style="grid-column:1/-1"><label class="lb">รายละเอียดเหตุการณ์</label>
-      <textarea name="details" rows="4" placeholder="อธิบายรายละเอียดเหตุการณ์...">${esc(w.details||'')}</textarea></div>
-    <div class="fg" style="grid-column:1/-1"><label class="lb">บทลงโทษ</label>
-      <textarea name="punishment" rows="3" placeholder="ระบุบทลงโทษ...">${esc(w.punishment||'')}</textarea></div>
+<form class="form-card" onsubmit="submitWarningForm(event)" style="padding:0;overflow:hidden">
+
+  <div style="padding:20px 24px;border-bottom:1px solid var(--bdr);background:#fff8f8">
+    <div style="font-size:12px;font-weight:700;color:#dc2626;letter-spacing:.5px;margin-bottom:14px">📋 ข้อมูลเอกสาร</div>
+    <div class="form-grid" style="gap:14px">
+      <div class="fg" style="margin:0"><label class="lb">เลขที่ใบเตือน</label>
+        <input type="text" name="warningNo" value="${esc(w.warningNo||'')}" placeholder="เช่น WRN-2024-001"></div>
+      <div class="fg" style="margin:0"><label class="lb">วันที่ใบเตือน <span class="req">*</span></label>
+        <input type="date" name="date" value="${esc(toInputDate(w.date))}" required></div>
+      <div class="fg" style="margin:0"><label class="lb">พนักงาน <span class="req">*</span></label>
+        <select name="employeeId" required>
+          <option value="">-- เลือกพนักงาน --</option>
+          ${empOpts}
+        </select></div>
+      <div class="fg" style="margin:0"><label class="lb">ผู้สอบสวนเหตุการณ์</label>
+        <input type="text" name="investigator" value="${esc(w.investigator||'')}" placeholder="ชื่อผู้สอบสวน"></div>
+    </div>
   </div>
-  <div class="form-foot" style="${isEdit?'justify-content:space-between':''}">
+
+  <div style="padding:20px 24px;border-bottom:1px solid var(--bdr)">
+    <div style="font-size:12px;font-weight:700;color:#dc2626;letter-spacing:.5px;margin-bottom:14px">⚠️ ระดับการตักเตือน <span class="req">*</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px" onclick="render()">
+      ${typeRadios}
+    </div>
+  </div>
+
+  <div style="padding:20px 24px;border-bottom:1px solid var(--bdr);background:#fff8f8">
+    <div style="font-size:12px;font-weight:700;color:#dc2626;letter-spacing:.5px;margin-bottom:14px">◆ หัวข้อและรายละเอียด ◆</div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="fg" style="margin:0"><label class="lb" style="color:#dc2626;font-weight:700">◆ หัวข้อใบเตือน ◆ <span class="req">*</span></label>
+        <input type="text" name="topic" value="${esc(w.topic||'')}" placeholder="ระบุหัวข้อใบเตือน" required style="border-color:#dc2626;border-width:2px"></div>
+      <div class="fg" style="margin:0"><label class="lb">รายละเอียดเหตุการณ์</label>
+        <textarea name="details" rows="5" placeholder="อธิบายรายละเอียดเหตุการณ์ที่เกิดขึ้น...">${esc(w.details||'')}</textarea></div>
+      <div class="fg" style="margin:0"><label class="lb">บทลงโทษ</label>
+        <textarea name="punishment" rows="3" placeholder="ระบุบทลงโทษ...">${esc(w.punishment||'')}</textarea></div>
+    </div>
+  </div>
+
+  <div class="form-foot" style="${isEdit?'justify-content:space-between':'justify-content:flex-end'};padding:16px 24px;background:#fff">
     ${isEdit?`<button type="button" class="btn btn-del" onclick="confirmWarningDel('${w.id}')">🗑️ ลบใบเตือน</button>`:''}
     <div style="display:flex;gap:10px">
       <button type="button" class="btn btn-g" onclick="goPage('warning')">ยกเลิก</button>
@@ -1685,10 +1706,12 @@ async function submitWarningForm(ev){
   const isEdit=!!S.warningEditId;
   const warn={
     id:isEdit?S.warningEditId:'W'+Date.now().toString(36).toUpperCase(),
+    warningNo:fd.get('warningNo').trim(),
     date:fd.get('date'),
     type:fd.get('type'),
     topic:fd.get('topic').trim(),
     employeeId:fd.get('employeeId'),
+    investigator:fd.get('investigator').trim(),
     details:fd.get('details').trim(),
     punishment:fd.get('punishment').trim(),
     createdAt:isEdit?(S.warnings.find(w=>w.id===S.warningEditId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
