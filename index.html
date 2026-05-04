@@ -235,6 +235,10 @@ const S={
   loginLoading:false,
   userEditId:null,
   userDelId:null,
+  trainings:[],
+  trainingEditId:null,
+  trainingSearch:'',
+  trainingDelId:null,
 };
 
 // ── Storage ────────────────────────────────────────────────────
@@ -304,6 +308,22 @@ async function apiUserFetch(){
   }catch{return false}
 }
 async function apiUserPost(body){
+  if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อ'};
+  try{
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+    return JSON.parse(await r.text());
+  }catch{return{success:false,error:'เชื่อมต่อไม่ได้'}}
+}
+async function apiTrainingFetch(){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl+'?action=listTrainings',{redirect:'follow'});
+    const d=JSON.parse(await r.text());
+    if(d.success){S.trainings=d.data;return true}
+    return false;
+  }catch{return false}
+}
+async function apiTrainingPost(body){
   if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อ'};
   try{
     const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
@@ -517,6 +537,7 @@ function renderSidebar(){
     {id:'dashboard',ico:'📊',lbl:'ภาพรวมระบบ'},
     {id:'list',ico:'👥',lbl:'รายชื่อพนักงาน'},
     ...(isAdmin()?[{id:'form',ico:'➕',lbl:'เพิ่มพนักงาน'}]:[]),
+    {id:'training',ico:'📚',lbl:'ประวัติการอบรม'},
     {id:'depts',ico:'🏬',lbl:'ฐานข้อมูลแผนก'},
     ...(isAdmin()?[{id:'users',ico:'👤',lbl:'จัดการผู้ใช้'}]:[]),
   ];
@@ -900,6 +921,120 @@ function renderForm(){
     <button type="submit" class="btn btn-p">✅ เพิ่มพนักงาน</button>
   </div>`}
 </div>
+</form>
+${isEdit?renderEmpTrainings(e.id):''}`;
+}
+
+// ── Training in Employee Profile ──────────────────────────────
+function renderEmpTrainings(empId){
+  const list=S.trainings.filter(t=>(t.employeeIds||'').split(',').map(x=>x.trim()).includes(empId))
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  return`<div class="tbl-card" style="margin-top:24px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h3 style="margin:0;font-size:16px;color:var(--txt)">📚 ประวัติการอบรม</h3>
+    ${isAdmin()?`<button class="btn btn-p btn-sm" onclick="goTrainingForm(null,'${empId}')">+ บันทึกการอบรม</button>`:''}
+  </div>
+  ${list.length?`<div class="tbl-wrap"><table>
+    <thead><tr><th>วันที่</th><th>หัวข้อ</th><th>ระยะเวลา</th><th>ค่าใช้จ่าย</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <tbody>${list.map(t=>`<tr>
+      <td style="white-space:nowrap">${fdate(t.date)}</td>
+      <td><strong>${esc(t.topic)}</strong></td>
+      <td>${esc(t.duration||'-')}</td>
+      <td>${t.cost?Number(t.cost).toLocaleString()+' บาท':'-'}</td>
+      ${isAdmin()?`<td><button class="btn btn-sm btn-ed" onclick="editTraining('${t.id}')">✏️</button></td>`:''}
+    </tr>`).join('')}</tbody>
+  </table></div>`:`<div class="empty" style="padding:24px"><div class="ei" style="font-size:28px">📋</div><p style="color:#94a3b8">ยังไม่มีประวัติการอบรม</p></div>`}
+</div>`;
+}
+
+// ── Training List ─────────────────────────────────────────────
+function renderTraining(){
+  const q=S.trainingSearch.toLowerCase();
+  let list=[...S.trainings];
+  if(q)list=list.filter(t=>[t.topic,t.duration].some(v=>(v||'').toLowerCase().includes(q)));
+  list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  return`
+<div class="ph">
+  <div><h2>ประวัติการอบรม</h2><p>บันทึกการฝึกอบรมพนักงาน (${list.length} รายการ)</p></div>
+  <div class="ph-actions">
+    <button class="btn btn-g" onclick="apiTrainingFetch().then(()=>render())">↻ รีเฟรช</button>
+    ${isAdmin()?`<button class="btn btn-p" onclick="goTrainingForm(null,null)">+ บันทึกการอบรม</button>`:''}
+  </div>
+</div>
+<div class="tbl-card">
+  <div class="tbl-toolbar">
+    <div class="srch"><span style="color:#94a3b8;font-size:14px">🔍</span>
+      <input type="text" placeholder="ค้นหาหัวข้อ..." value="${esc(S.trainingSearch)}" oninput="S.trainingSearch=this.value;render();this.focus()">
+    </div>
+  </div>
+  <div class="tbl-wrap">
+  ${list.length?`<table>
+    <thead><tr><th>วันที่</th><th>หัวข้อการอบรม</th><th>ระยะเวลา</th><th>รายชื่อพนักงาน</th><th>ค่าใช้จ่าย</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <tbody>${list.map(t=>{
+      const ids=(t.employeeIds||'').split(',').map(x=>x.trim()).filter(Boolean);
+      const names=ids.map(id=>{const emp=S.emps.find(e=>e.id===id);return emp?esc(emp.fullName):id}).join(', ');
+      return`<tr>
+        <td style="white-space:nowrap;font-size:13px">${fdate(t.date)}</td>
+        <td><strong>${esc(t.topic)}</strong></td>
+        <td style="font-size:13px">${esc(t.duration||'-')}</td>
+        <td style="font-size:12px;color:#475569">${names||'-'}<br><span style="color:#94a3b8">(${ids.length} คน)</span></td>
+        <td style="white-space:nowrap">${t.cost?Number(t.cost).toLocaleString()+' บาท':'-'}</td>
+        ${isAdmin()?`<td style="white-space:nowrap">
+          <button class="btn btn-sm btn-ed" onclick="editTraining('${t.id}')">✏️</button>
+          <button class="btn btn-sm btn-del" onclick="confirmTrainingDel('${t.id}')" style="margin-left:4px">🗑️</button>
+        </td>`:''}
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`:`<div class="empty"><div class="ei">📋</div><h3>ยังไม่มีข้อมูล</h3><p>เริ่มบันทึกการอบรมได้เลย</p></div>`}
+  </div>
+</div>`;
+}
+
+// ── Training Form ─────────────────────────────────────────────
+function renderTrainingForm(){
+  const isEdit=!!S.trainingEditId;
+  const t=isEdit?S.trainings.find(x=>x.id===S.trainingEditId)||{}:{};
+  const selIds=new Set((t.employeeIds||S._trainingPreFill||'').split(',').map(x=>x.trim()).filter(Boolean));
+  const activeEmps=[...S.emps].filter(e=>e.status==='active').sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
+  const grouped={};
+  activeEmps.forEach(e=>{const co=e.company||'อื่นๆ';if(!grouped[co])grouped[co]=[];grouped[co].push(e)});
+  const empRows=Object.entries(grouped).map(([co,list])=>`
+    <div style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--pd);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--bdr)">${esc(co)}</div>
+      ${list.map(e=>`<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:13px">
+        <input type="checkbox" name="empIds" value="${e.id}" ${selIds.has(e.id)?'checked':''}>
+        <span><strong>${esc(e.fullName)}</strong><span style="color:#64748b;font-size:11px"> · ${esc(e.empId)} · ${esc(e.department||'')}</span></span>
+      </label>`).join('')}
+    </div>`).join('');
+  return`
+<div class="ph">
+  <div><h2>${isEdit?'แก้ไขการอบรม':'บันทึกการอบรม'}</h2><p>${isEdit?esc(t.topic||''):'กรอกข้อมูลการฝึกอบรม'}</p></div>
+  <button class="btn btn-g" onclick="goPage('training')">← กลับ</button>
+</div>
+<form class="form-card" onsubmit="submitTrainingForm(event)">
+  <div class="form-grid">
+    <div class="fg"><label class="lb">วันที่อบรม <span class="req">*</span></label>
+      <input type="date" name="date" value="${esc(toInputDate(t.date))}" required></div>
+    <div class="fg"><label class="lb">ระยะเวลา</label>
+      <input type="text" name="duration" value="${esc(t.duration||'')}" placeholder="เช่น 1 วัน / 8 ชั่วโมง"></div>
+    <div class="fg" style="grid-column:1/-1"><label class="lb">หัวข้อการอบรม <span class="req">*</span></label>
+      <input type="text" name="topic" value="${esc(t.topic||'')}" placeholder="ระบุหัวข้อการอบรม" required></div>
+    <div class="fg"><label class="lb">ค่าใช้จ่าย (บาท)</label>
+      <input type="number" name="cost" min="0" step="0.01" value="${esc(t.cost||'')}" placeholder="0"></div>
+  </div>
+  <div class="fg" style="margin-top:8px">
+    <label class="lb">รายชื่อพนักงานที่เข้าอบรม <span class="req">*</span></label>
+    <div style="border:1.5px solid var(--bdr);border-radius:8px;padding:12px;max-height:320px;overflow-y:auto;background:#fafafa;margin-top:6px">
+      ${activeEmps.length?empRows:`<p style="color:#94a3b8;font-size:13px;margin:0">ไม่พบพนักงาน</p>`}
+    </div>
+  </div>
+  <div class="form-foot ${isEdit?'justify-content:space-between':''}">
+    ${isEdit?`<button type="button" class="btn btn-del" onclick="confirmTrainingDel('${t.id}')">🗑️ ลบ</button>`:''}
+    <div style="display:flex;gap:10px">
+      <button type="button" class="btn btn-g" onclick="goPage('training')">ยกเลิก</button>
+      <button type="submit" class="btn btn-p">${isEdit?'💾 บันทึกการแก้ไข':'✅ บันทึกการอบรม'}</button>
+    </div>
+  </div>
 </form>`;
 }
 
@@ -1066,6 +1201,8 @@ function render(){
   else if(S.page==='dept-form')content=isAdmin()?renderDeptForm():(S.page='depts',renderDepts());
   else if(S.page==='users')content=renderUsers();
   else if(S.page==='user-form')content=renderUserForm();
+  else if(S.page==='training')content=renderTraining();
+  else if(S.page==='training-form')content=isAdmin()?renderTrainingForm():(S.page='training',renderTraining());
   const delModal=S.delId?`<div class="ov" onclick="cancelDel()"><div class="modal" onclick="event.stopPropagation()">
   <h3>⚠️ ยืนยันการลบพนักงาน</h3>
   <p>ต้องการลบข้อมูลพนักงานนี้ออกจากระบบ?<br>การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
@@ -1089,8 +1226,12 @@ function render(){
 </div></div>`:'';
   const mobHeader=`<div class="mob-header"><button class="ham" onclick="toggleMenu()">☰</button><div class="mh-logo">🏢 Human Resourcing Manager</div><div class="dot ${S.apiUrl&&S.connected?'on':'off'}" style="margin-right:4px"></div>${isAdmin()?`<button class="ham" onclick="openSetup()" style="font-size:16px">⚙️</button>`:''}</div>`;
   const mobOv=`<div class="mob-ov${S.menuOpen?' open':''}" onclick="closeMenu()"></div>`;
-  const botNav=`<nav class="bot-nav"><div class="bn-items"><button class="bn-item${S.page==='dashboard'?' active':''}" onclick="goPage('dashboard')"><span class="bi">📊</span><span>ภาพรวม</span></button><button class="bn-item${S.page==='list'?' active':''}" onclick="goPage('list')"><span class="bi">👥</span><span>พนักงาน</span></button>${isAdmin()?`<button class="bn-item${S.page==='form'?' active':''}" onclick="goPage('form')"><span class="bi">➕</span><span>เพิ่ม</span></button>`:''}<button class="bn-item${['depts','dept-form'].includes(S.page)?' active':''}" onclick="goPage('depts')"><span class="bi">🏬</span><span>แผนก</span></button>${isAdmin()?`<button class="bn-item${['users','user-form'].includes(S.page)?' active':''}" onclick="goPage('users')"><span class="bi">👤</span><span>ผู้ใช้</span></button>`:`<button class="bn-item" onclick="logout()"><span class="bi">🚪</span><span>ออก</span></button>`}</div></nav>`;
-  document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${delModal}${deptDelModal}${userDelModal}`;
+  const botNav=`<nav class="bot-nav"><div class="bn-items"><button class="bn-item${S.page==='dashboard'?' active':''}" onclick="goPage('dashboard')"><span class="bi">📊</span><span>ภาพรวม</span></button><button class="bn-item${S.page==='list'?' active':''}" onclick="goPage('list')"><span class="bi">👥</span><span>พนักงาน</span></button><button class="bn-item${['training','training-form'].includes(S.page)?' active':''}" onclick="goPage('training')"><span class="bi">📚</span><span>อบรม</span></button><button class="bn-item${['depts','dept-form'].includes(S.page)?' active':''}" onclick="goPage('depts')"><span class="bi">🏬</span><span>แผนก</span></button>${isAdmin()?`<button class="bn-item${['users','user-form'].includes(S.page)?' active':''}" onclick="goPage('users')"><span class="bi">👤</span><span>ผู้ใช้</span></button>`:`<button class="bn-item" onclick="logout()"><span class="bi">🚪</span><span>ออก</span></button>`}</div></nav>`;
+  const trainingDelModal=S.trainingDelId?`<div class="ov" onclick="cancelTrainingDel()"><div class="modal" onclick="event.stopPropagation()">
+  <h3>⚠️ ยืนยันการลบ</h3><p>ต้องการลบรายการอบรมนี้?</p>
+  <div class="modal-foot"><button class="btn btn-g" onclick="cancelTrainingDel()">ยกเลิก</button><button class="btn btn-del" onclick="doTrainingDel()">ลบ</button></div>
+</div></div>`:'';
+  document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${delModal}${deptDelModal}${userDelModal}${trainingDelModal}`;
 }
 
 // ── Event Handlers ─────────────────────────────────────────────
@@ -1102,7 +1243,8 @@ function goPage(p){
   if(p!=='form')S.editId=null;
   if(p!=='dept-form')S.deptEditId=null;
   if(p!=='user-form')S.userEditId=null;
-  S.delId=null;S.deptDelId=null;S.userDelId=null;
+  if(p!=='training-form'){S.trainingEditId=null;S._trainingPreFill='';}
+  S.delId=null;S.deptDelId=null;S.userDelId=null;S.trainingDelId=null;
   if(p==='dashboard'){S.dashDept='all';S.dashYear=new Date().getFullYear();}
   if(p==='list'){S.filterSt='all';S.filterEmpType='all';S.filterCompany='all';S.filterDept='all';S.filterPosition='all';S.search='';}
   if(p==='users'&&isAdmin()&&!S.users.length)apiUserFetch().then(()=>render());
@@ -1271,7 +1413,7 @@ async function doLogin(ev){
     render();
     if(S.apiUrl){
       S.loading=true;render();
-      const tasks=[apiFetch(),apiDeptFetch()];
+      const tasks=[apiFetch(),apiDeptFetch(),apiTrainingFetch()];
       if(S.user.role==='admin')tasks.push(apiUserFetch());
       await Promise.all(tasks);
       S.loading=false;render();
@@ -1368,6 +1510,45 @@ async function syncLocalToSheets(){
   render();
 }
 
+// ── Training Handlers ──────────────────────────────────────────
+function goTrainingForm(id,preEmpId){
+  S.trainingEditId=id||null;
+  S._trainingPreFill=preEmpId||'';
+  S.page='training-form';S.menuOpen=false;render();window.scrollTo(0,0);
+}
+function editTraining(id){goTrainingForm(id,null)}
+function confirmTrainingDel(id){S.trainingDelId=id;render()}
+function cancelTrainingDel(){S.trainingDelId=null;render()}
+async function doTrainingDel(){
+  const id=S.trainingDelId;S.trainingDelId=null;
+  S.trainings=S.trainings.filter(t=>t.id!==id);
+  const ok=await apiTrainingPost({action:'deleteTraining',id});
+  toast(ok.success?'ลบสำเร็จ':'ลบแล้ว (Local)',ok.success?'ok':'');
+  S.page='training';render();
+}
+async function submitTrainingForm(ev){
+  ev.preventDefault();
+  const fd=new FormData(ev.target);
+  const empIds=[...ev.target.querySelectorAll('input[name="empIds"]:checked')].map(x=>x.value);
+  if(!empIds.length){toast('กรุณาเลือกพนักงานอย่างน้อย 1 คน','err');return}
+  const isEdit=!!S.trainingEditId;
+  const tr={
+    id:isEdit?S.trainingEditId:'T'+Date.now().toString(36).toUpperCase(),
+    date:fd.get('date'),
+    topic:fd.get('topic').trim(),
+    duration:fd.get('duration').trim(),
+    employeeIds:empIds.join(','),
+    cost:fd.get('cost')||'0',
+    createdAt:isEdit?(S.trainings.find(t=>t.id===S.trainingEditId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+  };
+  if(isEdit){const i=S.trainings.findIndex(t=>t.id===S.trainingEditId);if(i>-1)S.trainings[i]=tr}
+  else S.trainings.unshift(tr);
+  const ok=await apiTrainingPost({action:isEdit?'updateTraining':'createTraining',data:tr});
+  toast(isEdit?'แก้ไขสำเร็จ':'บันทึกสำเร็จ','ok');
+  S.trainingEditId=null;S._trainingPreFill='';S.page='training';render();
+}
+
 // ── Init ───────────────────────────────────────────────────────
 S.emps=lload();
 S.depts=dload();
@@ -1375,7 +1556,7 @@ S.localBackup=backupLoad();
 render();
 if(S.user&&S.apiUrl){
   S.loading=true;render();
-  const tasks=[apiFetch(),apiDeptFetch()];
+  const tasks=[apiFetch(),apiDeptFetch(),apiTrainingFetch()];
   if(S.user.role==='admin')tasks.push(apiUserFetch());
   Promise.all(tasks).then(()=>{S.loading=false;render()});
 }

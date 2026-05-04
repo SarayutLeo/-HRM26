@@ -35,6 +35,11 @@ const SHEET_USER  = 'ผู้ใช้งาน';
 const USER_HEADERS = ['id', 'username', 'password', 'role', 'name', 'createdAt', 'updatedAt'];
 const USER_LABELS  = ['ID', 'Username', 'Password', 'Role', 'ชื่อ-นามสกุล', 'วันที่สร้าง', 'วันที่แก้ไข'];
 
+// ── Sheet: ประวัติอบรม ─────────────────────────────────────────
+const SHEET_TRAINING  = 'ประวัติอบรม';
+const TRAINING_HEADERS = ['id', 'date', 'topic', 'duration', 'employeeIds', 'cost', 'createdAt', 'updatedAt'];
+const TRAINING_LABELS  = ['ID', 'วันที่อบรม', 'หัวข้อการอบรม', 'ระยะเวลา', 'รหัสพนักงาน (IDs)', 'ค่าใช้จ่าย', 'วันที่สร้าง', 'วันที่แก้ไข'];
+
 // ── Sheet helpers ──────────────────────────────────────────────
 function initSheet(name, labels, widths) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -100,6 +105,11 @@ function getUserSheet() {
   }
   return s;
 }
+function getTrainingSheet() {
+  const s = initSheet(SHEET_TRAINING, TRAINING_LABELS, [140,110,220,120,400,110,160,160]);
+  ensureColumns(s, TRAINING_LABELS);
+  return s;
+}
 
 function rowToObj(headers, row) {
   const obj = {};
@@ -154,6 +164,9 @@ function doGet(e) {
     }
     if (action === 'listUsers') {
       return jsonResp({ success: true, data: readSheet(getUserSheet(), USER_HEADERS) });
+    }
+    if (action === 'listTrainings') {
+      return jsonResp({ success: true, data: readSheet(getTrainingSheet(), TRAINING_HEADERS) });
     }
     if (action === 'login') {
       const username = e.parameter.username || '';
@@ -254,6 +267,27 @@ function doPost(e) {
       const sheet = getUserSheet();
       const row = findRowById(sheet, id);
       if (row < 0) return jsonResp({ success: false, error: 'User not found' });
+      sheet.deleteRow(row);
+      return jsonResp({ success: true });
+    }
+
+    // ── Training ──
+    if (action === 'createTraining') {
+      const sheet = getTrainingSheet();
+      sheet.appendRow(objToRow(TRAINING_HEADERS, data));
+      return jsonResp({ success: true });
+    }
+    if (action === 'updateTraining') {
+      const sheet = getTrainingSheet();
+      const row = findRowById(sheet, data.id);
+      if (row < 0) return jsonResp({ success: false, error: 'Training not found' });
+      sheet.getRange(row, 1, 1, TRAINING_HEADERS.length).setValues([objToRow(TRAINING_HEADERS, data)]);
+      return jsonResp({ success: true });
+    }
+    if (action === 'deleteTraining') {
+      const sheet = getTrainingSheet();
+      const row = findRowById(sheet, id);
+      if (row < 0) return jsonResp({ success: false, error: 'Training not found' });
       sheet.deleteRow(row);
       return jsonResp({ success: true });
     }
