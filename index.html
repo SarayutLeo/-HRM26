@@ -239,6 +239,10 @@ const S={
   trainingEditId:null,
   trainingSearch:'',
   trainingDelId:null,
+  warnings:[],
+  warningEditId:null,
+  warningSearch:'',
+  warningDelId:null,
 };
 
 // ── Storage ────────────────────────────────────────────────────
@@ -308,6 +312,22 @@ async function apiUserFetch(){
   }catch{return false}
 }
 async function apiUserPost(body){
+  if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อ'};
+  try{
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+    return JSON.parse(await r.text());
+  }catch{return{success:false,error:'เชื่อมต่อไม่ได้'}}
+}
+async function apiWarningFetch(){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl+'?action=listWarnings',{redirect:'follow'});
+    const d=JSON.parse(await r.text());
+    if(d.success){S.warnings=d.data;return true}
+    return false;
+  }catch{return false}
+}
+async function apiWarningPost(body){
   if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อ'};
   try{
     const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
@@ -537,7 +557,8 @@ function renderSidebar(){
     {id:'dashboard',ico:'📊',lbl:'ภาพรวมระบบ'},
     {id:'list',ico:'👥',lbl:'รายชื่อพนักงาน'},
     ...(isAdmin()?[{id:'form',ico:'➕',lbl:'เพิ่มพนักงาน'}]:[]),
-    {id:'training',ico:'📚',lbl:'ประวัติการอบรม'},
+    {id:'training',ico:'📚',lbl:'ประวัติการฝึกอบรม'},
+    {id:'warning',ico:'⚠️',lbl:'ใบเตือน'},
     {id:'depts',ico:'🏬',lbl:'ฐานข้อมูลแผนก'},
     ...(isAdmin()?[{id:'users',ico:'👤',lbl:'จัดการผู้ใช้'}]:[]),
   ];
@@ -922,7 +943,8 @@ function renderForm(){
   </div>`}
 </div>
 </form>
-${isEdit?renderEmpTrainings(e.id):''}`;
+${isEdit?renderEmpTrainings(e.id):''}
+${isEdit?renderEmpWarnings(e.id):''}`;
 }
 
 // ── Training in Employee Profile ──────────────────────────────
@@ -931,7 +953,7 @@ function renderEmpTrainings(empId){
     .sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   return`<div class="tbl-card" style="margin-top:24px">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-    <h3 style="margin:0;font-size:16px;color:var(--txt)">📚 ประวัติการอบรม</h3>
+    <h3 style="margin:0;font-size:16px;color:var(--txt)">📚 ประวัติการฝึกอบรม</h3>
     ${isAdmin()?`<button class="btn btn-p btn-sm" onclick="goTrainingForm(null,'${empId}')">+ บันทึกการอบรม</button>`:''}
   </div>
   ${list.length?`<div class="tbl-wrap"><table>
@@ -943,7 +965,7 @@ function renderEmpTrainings(empId){
       <td>${t.cost?Number(t.cost).toLocaleString()+' บาท':'-'}</td>
       ${isAdmin()?`<td><button class="btn btn-sm btn-ed" onclick="editTraining('${t.id}')">✏️</button></td>`:''}
     </tr>`).join('')}</tbody>
-  </table></div>`:`<div class="empty" style="padding:24px"><div class="ei" style="font-size:28px">📋</div><p style="color:#94a3b8">ยังไม่มีประวัติการอบรม</p></div>`}
+  </table></div>`:`<div class="empty" style="padding:24px"><div class="ei" style="font-size:28px">📋</div><p style="color:#94a3b8">ยังไม่มีประวัติการฝึกอบรม</p></div>`}
 </div>`;
 }
 
@@ -955,7 +977,7 @@ function renderTraining(){
   list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   return`
 <div class="ph">
-  <div><h2>ประวัติการอบรม</h2><p>บันทึกการฝึกอบรมพนักงาน (${list.length} รายการ)</p></div>
+  <div><h2>ประวัติการฝึกอบรม</h2><p>บันทึกการฝึกอบรมพนักงาน (${list.length} รายการ)</p></div>
   <div class="ph-actions">
     <button class="btn btn-g" onclick="apiTrainingFetch().then(()=>render())">↻ รีเฟรช</button>
     ${isAdmin()?`<button class="btn btn-p" onclick="goTrainingForm(null,null)">+ บันทึกการอบรม</button>`:''}
@@ -997,15 +1019,21 @@ function renderTrainingForm(){
   const selIds=new Set((t.employeeIds||S._trainingPreFill||'').split(',').map(x=>x.trim()).filter(Boolean));
   const activeEmps=[...S.emps].filter(e=>e.status==='active').sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
   const grouped={};
-  activeEmps.forEach(e=>{const co=e.company||'อื่นๆ';if(!grouped[co])grouped[co]=[];grouped[co].push(e)});
-  const empRows=Object.entries(grouped).map(([co,list])=>`
-    <div style="margin-bottom:10px">
-      <div style="font-size:12px;font-weight:700;color:var(--pd);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--bdr)">${esc(co)}</div>
-      ${list.map(e=>`<label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:13px">
+  activeEmps.forEach(e=>{
+    const key=(e.company||'อื่นๆ')+'|||'+(e.department||'ไม่ระบุแผนก');
+    if(!grouped[key])grouped[key]=[];grouped[key].push(e);
+  });
+  const empRows=Object.entries(grouped).sort(([a],[b])=>a.localeCompare(b,'th')).map(([key,list])=>{
+    const [co,dept]=key.split('|||');
+    return`<div style="margin-bottom:10px">
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:2px">${esc(co)}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--pd);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--bdr)">🏬 ${esc(dept)}</div>
+      ${list.map(e=>`<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;font-size:13px">
         <input type="checkbox" name="empIds" value="${e.id}" ${selIds.has(e.id)?'checked':''}>
-        <span><strong>${esc(e.fullName)}</strong><span style="color:#64748b;font-size:11px"> · ${esc(e.empId)} · ${esc(e.department||'')}</span></span>
+        <span><strong>${esc(e.fullName)}</strong><span style="color:#64748b;font-size:11px"> · ${esc(e.empId)}</span></span>
       </label>`).join('')}
-    </div>`).join('');
+    </div>`;
+  }).join('');
   return`
 <div class="ph">
   <div><h2>${isEdit?'แก้ไขการอบรม':'บันทึกการอบรม'}</h2><p>${isEdit?esc(t.topic||''):'กรอกข้อมูลการฝึกอบรม'}</p></div>
@@ -1033,6 +1061,121 @@ function renderTrainingForm(){
     <div style="display:flex;gap:10px">
       <button type="button" class="btn btn-g" onclick="goPage('training')">ยกเลิก</button>
       <button type="submit" class="btn btn-p">${isEdit?'💾 บันทึกการแก้ไข':'✅ บันทึกการอบรม'}</button>
+    </div>
+  </div>
+</form>`;
+}
+
+// ── Warning in Employee Profile ───────────────────────────────
+function renderEmpWarnings(empId){
+  const list=S.warnings.filter(w=>w.employeeId===empId).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const typeColor={'ใบเตือนครั้งที่ 1':'#f59e0b','ใบเตือนครั้งที่ 2':'#f97316','ใบเตือนครั้งที่ 3':'#ef4444','หนังสือให้ออก':'#7f1d1d'};
+  return`<div class="tbl-card" style="margin-top:16px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h3 style="margin:0;font-size:16px;color:#dc2626">⚠️ ประวัติใบเตือน</h3>
+    ${isAdmin()?`<button class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;padding:6px 12px;border-radius:7px;cursor:pointer;font:13px 'Sarabun',sans-serif" onclick="goWarningForm(null,'${empId}')">+ บันทึกใบเตือน</button>`:''}
+  </div>
+  ${list.length?`<div class="tbl-wrap"><table>
+    <thead><tr><th>วันที่</th><th>ประเภท</th><th>◆ หัวข้อใบเตือน ◆</th><th>บทลงโทษ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <tbody>${list.map(w=>`<tr>
+      <td style="white-space:nowrap;font-size:13px">${fdate(w.date)}</td>
+      <td><span style="background:${typeColor[w.type]||'#64748b'}22;color:${typeColor[w.type]||'#64748b'};padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700">${esc(w.type||'-')}</span></td>
+      <td><strong style="color:#dc2626">◆ ${esc(w.topic)} ◆</strong></td>
+      <td style="font-size:12px">${esc(w.punishment||'-')}</td>
+      ${isAdmin()?`<td><button class="btn btn-sm btn-ed" onclick="editWarning('${w.id}')">✏️</button></td>`:''}
+    </tr>`).join('')}</tbody>
+  </table></div>`:`<div class="empty" style="padding:24px"><div class="ei" style="font-size:28px">📋</div><p style="color:#94a3b8">ไม่มีประวัติใบเตือน</p></div>`}
+</div>`;
+}
+
+// ── Warning List ──────────────────────────────────────────────
+function renderWarning(){
+  const q=S.warningSearch.toLowerCase();
+  let list=[...S.warnings];
+  if(q)list=list.filter(w=>[w.topic,w.type,w.details].some(v=>(v||'').toLowerCase().includes(q))||
+    (()=>{const emp=S.emps.find(e=>e.id===w.employeeId);return emp&&(emp.fullName||'').toLowerCase().includes(q)})());
+  list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const typeColor={'ใบเตือนครั้งที่ 1':'#f59e0b','ใบเตือนครั้งที่ 2':'#f97316','ใบเตือนครั้งที่ 3':'#ef4444','หนังสือให้ออก':'#7f1d1d'};
+  return`
+<div class="ph">
+  <div><h2 style="color:#dc2626">⚠️ ใบเตือน</h2><p>บันทึกประวัติใบเตือนพนักงาน (${list.length} รายการ)</p></div>
+  <div class="ph-actions">
+    <button class="btn btn-g" onclick="apiWarningFetch().then(()=>render())">↻ รีเฟรช</button>
+    ${isAdmin()?`<button class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font:13px 'Sarabun',sans-serif" onclick="goWarningForm(null,null)">+ บันทึกใบเตือน</button>`:''}
+  </div>
+</div>
+<div class="tbl-card">
+  <div class="tbl-toolbar">
+    <div class="srch"><span style="color:#94a3b8;font-size:14px">🔍</span>
+      <input type="text" placeholder="ค้นหาชื่อพนักงาน, หัวข้อ, ประเภท..." value="${esc(S.warningSearch)}" oninput="S.warningSearch=this.value;render();this.focus()">
+    </div>
+  </div>
+  <div class="tbl-wrap">
+  ${list.length?`<table>
+    <thead><tr><th>วันที่</th><th>ประเภท</th><th>◆ หัวข้อใบเตือน ◆</th><th>พนักงาน</th><th>รายละเอียด</th><th>บทลงโทษ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <tbody>${list.map(w=>{
+      const emp=S.emps.find(e=>e.id===w.employeeId);
+      return`<tr>
+        <td style="white-space:nowrap;font-size:13px">${fdate(w.date)}</td>
+        <td><span style="background:${typeColor[w.type]||'#64748b'}22;color:${typeColor[w.type]||'#64748b'};padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap">${esc(w.type||'-')}</span></td>
+        <td><strong style="color:#dc2626">◆ ${esc(w.topic)} ◆</strong></td>
+        <td>${emp?`<strong>${esc(emp.fullName)}</strong><br><span style="font-size:11px;color:#64748b">${esc(emp.empId)}</span>`:esc(w.employeeId||'-')}</td>
+        <td style="font-size:12px;max-width:200px">${esc(w.details||'-')}</td>
+        <td style="font-size:12px">${esc(w.punishment||'-')}</td>
+        ${isAdmin()?`<td style="white-space:nowrap">
+          <button class="btn btn-sm btn-ed" onclick="editWarning('${w.id}')">✏️</button>
+          <button class="btn btn-sm btn-del" onclick="confirmWarningDel('${w.id}')" style="margin-left:4px">🗑️</button>
+        </td>`:''}
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`:`<div class="empty"><div class="ei">📋</div><h3>ยังไม่มีข้อมูล</h3><p>เริ่มบันทึกใบเตือนได้เลย</p></div>`}
+  </div>
+</div>`;
+}
+
+// ── Warning Form ──────────────────────────────────────────────
+function renderWarningForm(){
+  const isEdit=!!S.warningEditId;
+  const w=isEdit?S.warnings.find(x=>x.id===S.warningEditId)||{}:{};
+  const preEmpId=S._warningPreFill||'';
+  const activeEmps=[...S.emps].filter(e=>e.status==='active').sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
+  const selEmpId=w.employeeId||preEmpId;
+  const empOpts=activeEmps.map(e=>`<option value="${e.id}" ${selEmpId===e.id?'selected':''}>${esc(e.fullName)} (${esc(e.empId)}) — ${esc(e.department||'')}</option>`).join('');
+  const TYPES=['ใบเตือนครั้งที่ 1','ใบเตือนครั้งที่ 2','ใบเตือนครั้งที่ 3','หนังสือให้ออก'];
+  const typeOpts=TYPES.map(t=>`<option value="${t}" ${w.type===t?'selected':''}>${t}</option>`).join('');
+  return`
+<div class="ph">
+  <div><h2 style="color:#dc2626">${isEdit?'◆ แก้ไขใบเตือน ◆':'◆ บันทึกใบเตือน ◆'}</h2>
+    <p>${isEdit?`แก้ไข: ◆ ${esc(w.topic||'')} ◆`:'กรอกข้อมูลใบเตือนพนักงาน'}</p>
+  </div>
+  <button class="btn btn-g" onclick="goPage('warning')">← กลับ</button>
+</div>
+<form class="form-card" onsubmit="submitWarningForm(event)">
+  <div class="form-grid">
+    <div class="fg"><label class="lb">วันที่ใบเตือน <span class="req">*</span></label>
+      <input type="date" name="date" value="${esc(toInputDate(w.date))}" required></div>
+    <div class="fg"><label class="lb">ประเภทใบเตือน <span class="req">*</span></label>
+      <select name="type" required>
+        <option value="">-- เลือกประเภท --</option>
+        ${typeOpts}
+      </select></div>
+    <div class="fg" style="grid-column:1/-1"><label class="lb" style="color:#dc2626;font-weight:700">◆ หัวข้อใบเตือน ◆ <span class="req">*</span></label>
+      <input type="text" name="topic" value="${esc(w.topic||'')}" placeholder="ระบุหัวข้อใบเตือน" required style="border-color:#dc2626"></div>
+    <div class="fg" style="grid-column:1/-1"><label class="lb">พนักงาน <span class="req">*</span></label>
+      <select name="employeeId" required>
+        <option value="">-- เลือกพนักงาน --</option>
+        ${empOpts}
+      </select></div>
+    <div class="fg" style="grid-column:1/-1"><label class="lb">รายละเอียดเหตุการณ์</label>
+      <textarea name="details" rows="4" placeholder="อธิบายรายละเอียดเหตุการณ์...">${esc(w.details||'')}</textarea></div>
+    <div class="fg" style="grid-column:1/-1"><label class="lb">บทลงโทษ</label>
+      <textarea name="punishment" rows="3" placeholder="ระบุบทลงโทษ...">${esc(w.punishment||'')}</textarea></div>
+  </div>
+  <div class="form-foot" style="${isEdit?'justify-content:space-between':''}">
+    ${isEdit?`<button type="button" class="btn btn-del" onclick="confirmWarningDel('${w.id}')">🗑️ ลบใบเตือน</button>`:''}
+    <div style="display:flex;gap:10px">
+      <button type="button" class="btn btn-g" onclick="goPage('warning')">ยกเลิก</button>
+      <button type="submit" class="btn btn-p" style="background:#dc2626">${isEdit?'💾 บันทึกการแก้ไข':'✅ บันทึกใบเตือน'}</button>
     </div>
   </div>
 </form>`;
@@ -1203,6 +1346,8 @@ function render(){
   else if(S.page==='user-form')content=renderUserForm();
   else if(S.page==='training')content=renderTraining();
   else if(S.page==='training-form')content=isAdmin()?renderTrainingForm():(S.page='training',renderTraining());
+  else if(S.page==='warning')content=renderWarning();
+  else if(S.page==='warning-form')content=isAdmin()?renderWarningForm():(S.page='warning',renderWarning());
   const delModal=S.delId?`<div class="ov" onclick="cancelDel()"><div class="modal" onclick="event.stopPropagation()">
   <h3>⚠️ ยืนยันการลบพนักงาน</h3>
   <p>ต้องการลบข้อมูลพนักงานนี้ออกจากระบบ?<br>การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
@@ -1226,12 +1371,16 @@ function render(){
 </div></div>`:'';
   const mobHeader=`<div class="mob-header"><button class="ham" onclick="toggleMenu()">☰</button><div class="mh-logo">🏢 Human Resourcing Manager</div><div class="dot ${S.apiUrl&&S.connected?'on':'off'}" style="margin-right:4px"></div>${isAdmin()?`<button class="ham" onclick="openSetup()" style="font-size:16px">⚙️</button>`:''}</div>`;
   const mobOv=`<div class="mob-ov${S.menuOpen?' open':''}" onclick="closeMenu()"></div>`;
-  const botNav=`<nav class="bot-nav"><div class="bn-items"><button class="bn-item${S.page==='dashboard'?' active':''}" onclick="goPage('dashboard')"><span class="bi">📊</span><span>ภาพรวม</span></button><button class="bn-item${S.page==='list'?' active':''}" onclick="goPage('list')"><span class="bi">👥</span><span>พนักงาน</span></button><button class="bn-item${['training','training-form'].includes(S.page)?' active':''}" onclick="goPage('training')"><span class="bi">📚</span><span>อบรม</span></button><button class="bn-item${['depts','dept-form'].includes(S.page)?' active':''}" onclick="goPage('depts')"><span class="bi">🏬</span><span>แผนก</span></button>${isAdmin()?`<button class="bn-item${['users','user-form'].includes(S.page)?' active':''}" onclick="goPage('users')"><span class="bi">👤</span><span>ผู้ใช้</span></button>`:`<button class="bn-item" onclick="logout()"><span class="bi">🚪</span><span>ออก</span></button>`}</div></nav>`;
+  const botNav=`<nav class="bot-nav"><div class="bn-items"><button class="bn-item${S.page==='dashboard'?' active':''}" onclick="goPage('dashboard')"><span class="bi">📊</span><span>ภาพรวม</span></button><button class="bn-item${S.page==='list'?' active':''}" onclick="goPage('list')"><span class="bi">👥</span><span>พนักงาน</span></button><button class="bn-item${['training','training-form'].includes(S.page)?' active':''}" onclick="goPage('training')"><span class="bi">📚</span><span>อบรม</span></button><button class="bn-item${['warning','warning-form'].includes(S.page)?' active':''}" onclick="goPage('warning')"><span class="bi">⚠️</span><span>ใบเตือน</span></button><button class="bn-item${['depts','dept-form'].includes(S.page)?' active':''}" onclick="goPage('depts')"><span class="bi">🏬</span><span>แผนก</span></button>${isAdmin()?`<button class="bn-item${['users','user-form'].includes(S.page)?' active':''}" onclick="goPage('users')"><span class="bi">👤</span><span>ผู้ใช้</span></button>`:`<button class="bn-item" onclick="logout()"><span class="bi">🚪</span><span>ออก</span></button>`}</div></nav>`;
+  const warningDelModal=S.warningDelId?`<div class="ov" onclick="cancelWarningDel()"><div class="modal" onclick="event.stopPropagation()">
+  <h3>⚠️ ยืนยันการลบใบเตือน</h3><p>ต้องการลบใบเตือนนี้ออกจากระบบ?</p>
+  <div class="modal-foot"><button class="btn btn-g" onclick="cancelWarningDel()">ยกเลิก</button><button class="btn btn-del" onclick="doWarningDel()">ลบ</button></div>
+</div></div>`:'';
   const trainingDelModal=S.trainingDelId?`<div class="ov" onclick="cancelTrainingDel()"><div class="modal" onclick="event.stopPropagation()">
   <h3>⚠️ ยืนยันการลบ</h3><p>ต้องการลบรายการอบรมนี้?</p>
   <div class="modal-foot"><button class="btn btn-g" onclick="cancelTrainingDel()">ยกเลิก</button><button class="btn btn-del" onclick="doTrainingDel()">ลบ</button></div>
 </div></div>`:'';
-  document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${delModal}${deptDelModal}${userDelModal}${trainingDelModal}`;
+  document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${delModal}${deptDelModal}${userDelModal}${trainingDelModal}${warningDelModal}`;
 }
 
 // ── Event Handlers ─────────────────────────────────────────────
@@ -1244,7 +1393,8 @@ function goPage(p){
   if(p!=='dept-form')S.deptEditId=null;
   if(p!=='user-form')S.userEditId=null;
   if(p!=='training-form'){S.trainingEditId=null;S._trainingPreFill='';}
-  S.delId=null;S.deptDelId=null;S.userDelId=null;S.trainingDelId=null;
+  if(p!=='warning-form')S.warningEditId=null;
+  S.delId=null;S.deptDelId=null;S.userDelId=null;S.trainingDelId=null;S.warningDelId=null;
   if(p==='dashboard'){S.dashDept='all';S.dashYear=new Date().getFullYear();}
   if(p==='list'){S.filterSt='all';S.filterEmpType='all';S.filterCompany='all';S.filterDept='all';S.filterPosition='all';S.search='';}
   if(p==='users'&&isAdmin()&&!S.users.length)apiUserFetch().then(()=>render());
@@ -1413,7 +1563,7 @@ async function doLogin(ev){
     render();
     if(S.apiUrl){
       S.loading=true;render();
-      const tasks=[apiFetch(),apiDeptFetch(),apiTrainingFetch()];
+      const tasks=[apiFetch(),apiDeptFetch(),apiTrainingFetch(),apiWarningFetch()];
       if(S.user.role==='admin')tasks.push(apiUserFetch());
       await Promise.all(tasks);
       S.loading=false;render();
@@ -1508,6 +1658,44 @@ async function syncLocalToSheets(){
   S.loading=false;
   toast(fail===0?`อัพโหลดสำเร็จ ${ok} รายการ`:`สำเร็จ ${ok}, ล้มเหลว ${fail} รายการ`,fail===0?'ok':'err');
   render();
+}
+
+// ── Warning Handlers ───────────────────────────────────────────
+function goWarningForm(id,preEmpId){
+  S.warningEditId=id||null;
+  S._warningPreFill=preEmpId||'';
+  S.page='warning-form';S.menuOpen=false;render();window.scrollTo(0,0);
+}
+function editWarning(id){goWarningForm(id,null)}
+function confirmWarningDel(id){S.warningDelId=id;render()}
+function cancelWarningDel(){S.warningDelId=null;render()}
+async function doWarningDel(){
+  const id=S.warningDelId;S.warningDelId=null;
+  S.warnings=S.warnings.filter(w=>w.id!==id);
+  const ok=await apiWarningPost({action:'deleteWarning',id});
+  toast(ok.success?'ลบสำเร็จ':'ลบแล้ว (Local)',ok.success?'ok':'');
+  S.page='warning';render();
+}
+async function submitWarningForm(ev){
+  ev.preventDefault();
+  const fd=new FormData(ev.target);
+  const isEdit=!!S.warningEditId;
+  const warn={
+    id:isEdit?S.warningEditId:'W'+Date.now().toString(36).toUpperCase(),
+    date:fd.get('date'),
+    type:fd.get('type'),
+    topic:fd.get('topic').trim(),
+    employeeId:fd.get('employeeId'),
+    details:fd.get('details').trim(),
+    punishment:fd.get('punishment').trim(),
+    createdAt:isEdit?(S.warnings.find(w=>w.id===S.warningEditId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+  };
+  if(isEdit){const i=S.warnings.findIndex(w=>w.id===S.warningEditId);if(i>-1)S.warnings[i]=warn}
+  else S.warnings.unshift(warn);
+  const ok=await apiWarningPost({action:isEdit?'updateWarning':'createWarning',data:warn});
+  toast(isEdit?'แก้ไขสำเร็จ':'บันทึกสำเร็จ','ok');
+  S.warningEditId=null;S._warningPreFill='';S.page='warning';render();
 }
 
 // ── Training Handlers ──────────────────────────────────────────

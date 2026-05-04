@@ -35,6 +35,11 @@ const SHEET_USER  = 'ผู้ใช้งาน';
 const USER_HEADERS = ['id', 'username', 'password', 'role', 'name', 'createdAt', 'updatedAt'];
 const USER_LABELS  = ['ID', 'Username', 'Password', 'Role', 'ชื่อ-นามสกุล', 'วันที่สร้าง', 'วันที่แก้ไข'];
 
+// ── Sheet: ใบเตือน ────────────────────────────────────────────
+const SHEET_WARNING  = 'ใบเตือน';
+const WARNING_HEADERS = ['id', 'date', 'type', 'topic', 'employeeId', 'details', 'punishment', 'createdAt', 'updatedAt'];
+const WARNING_LABELS  = ['ID', 'วันที่ใบเตือน', 'ประเภทใบเตือน', 'หัวข้อใบเตือน', 'รหัสพนักงาน', 'รายละเอียดเหตุการณ์', 'บทลงโทษ', 'วันที่สร้าง', 'วันที่แก้ไข'];
+
 // ── Sheet: ประวัติอบรม ─────────────────────────────────────────
 const SHEET_TRAINING  = 'ประวัติอบรม';
 const TRAINING_HEADERS = ['id', 'date', 'topic', 'duration', 'employeeIds', 'cost', 'createdAt', 'updatedAt'];
@@ -105,6 +110,11 @@ function getUserSheet() {
   }
   return s;
 }
+function getWarningSheet() {
+  const s = initSheet(SHEET_WARNING, WARNING_LABELS, [140,110,140,200,140,400,200,160,160]);
+  ensureColumns(s, WARNING_LABELS);
+  return s;
+}
 function getTrainingSheet() {
   const s = initSheet(SHEET_TRAINING, TRAINING_LABELS, [140,110,220,120,400,110,160,160]);
   ensureColumns(s, TRAINING_LABELS);
@@ -167,6 +177,9 @@ function doGet(e) {
     }
     if (action === 'listTrainings') {
       return jsonResp({ success: true, data: readSheet(getTrainingSheet(), TRAINING_HEADERS) });
+    }
+    if (action === 'listWarnings') {
+      return jsonResp({ success: true, data: readSheet(getWarningSheet(), WARNING_HEADERS) });
     }
     if (action === 'login') {
       const username = e.parameter.username || '';
@@ -288,6 +301,27 @@ function doPost(e) {
       const sheet = getTrainingSheet();
       const row = findRowById(sheet, id);
       if (row < 0) return jsonResp({ success: false, error: 'Training not found' });
+      sheet.deleteRow(row);
+      return jsonResp({ success: true });
+    }
+
+    // ── Warning ──
+    if (action === 'createWarning') {
+      const sheet = getWarningSheet();
+      sheet.appendRow(objToRow(WARNING_HEADERS, data));
+      return jsonResp({ success: true });
+    }
+    if (action === 'updateWarning') {
+      const sheet = getWarningSheet();
+      const row = findRowById(sheet, data.id);
+      if (row < 0) return jsonResp({ success: false, error: 'Warning not found' });
+      sheet.getRange(row, 1, 1, WARNING_HEADERS.length).setValues([objToRow(WARNING_HEADERS, data)]);
+      return jsonResp({ success: true });
+    }
+    if (action === 'deleteWarning') {
+      const sheet = getWarningSheet();
+      const row = findRowById(sheet, id);
+      if (row < 0) return jsonResp({ success: false, error: 'Warning not found' });
       sheet.deleteRow(row);
       return jsonResp({ success: true });
     }
