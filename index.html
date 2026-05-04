@@ -558,7 +558,7 @@ function renderSidebar(){
     {id:'list',ico:'👥',lbl:'รายชื่อพนักงาน'},
     ...(isAdmin()?[{id:'form',ico:'➕',lbl:'เพิ่มพนักงาน'}]:[]),
     {id:'training',ico:'📚',lbl:'ประวัติการฝึกอบรม'},
-    {id:'warning',ico:'⚠️',lbl:'ใบเตือน'},
+    {id:'warning',ico:'⚠️',lbl:'ประวัติใบเตือน'},
     {id:'depts',ico:'🏬',lbl:'ฐานข้อมูลแผนก'},
     ...(isAdmin()?[{id:'users',ico:'👤',lbl:'จัดการผู้ใช้'}]:[]),
   ];
@@ -1069,14 +1069,14 @@ function renderTrainingForm(){
 // ── Warning in Employee Profile ───────────────────────────────
 function renderEmpWarnings(empId){
   const list=S.warnings.filter(w=>w.employeeId===empId).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  const typeColor={'ใบเตือนครั้งที่ 1':'#f59e0b','ใบเตือนครั้งที่ 2':'#f97316','ใบเตือนครั้งที่ 3':'#ef4444','หนังสือให้ออก':'#7f1d1d'};
+  const typeColor={'ตักเตือนโดยวาจา':'#0ea5e9','ตักเตือนด้วยลายลักษณ์อักษร ครั้งที่ 1':'#f59e0b','ตักเตือนด้วยลายลักษณ์อักษร ครั้งที่ 2':'#f97316','พักงาน ตั้งแต่ 3 - 7 วัน โดยไม่ได้รับค่าจ้างและสวัสดิการ':'#ef4444','เลิกจ้าง':'#7f1d1d'};
   return`<div class="tbl-card" style="margin-top:16px">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
     <h3 style="margin:0;font-size:16px;color:#dc2626">⚠️ ประวัติใบเตือน</h3>
     ${isAdmin()?`<button class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;padding:6px 12px;border-radius:7px;cursor:pointer;font:13px 'Sarabun',sans-serif" onclick="goWarningForm(null,'${empId}')">+ บันทึกใบเตือน</button>`:''}
   </div>
   ${list.length?`<div class="tbl-wrap"><table>
-    <thead><tr><th>วันที่</th><th>ประเภท</th><th>◆ หัวข้อใบเตือน ◆</th><th>บทลงโทษ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <thead><tr><th>วันที่</th><th>ระดับการตักเตือน</th><th>◆ หัวข้อใบเตือน ◆</th><th>บทลงโทษ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
     <tbody>${list.map(w=>`<tr>
       <td style="white-space:nowrap;font-size:13px">${fdate(w.date)}</td>
       <td><span style="background:${typeColor[w.type]||'#64748b'}22;color:${typeColor[w.type]||'#64748b'};padding:2px 8px;border-radius:20px;font-size:12px;font-weight:700">${esc(w.type||'-')}</span></td>
@@ -1095,10 +1095,10 @@ function renderWarning(){
   if(q)list=list.filter(w=>[w.topic,w.type,w.details].some(v=>(v||'').toLowerCase().includes(q))||
     (()=>{const emp=S.emps.find(e=>e.id===w.employeeId);return emp&&(emp.fullName||'').toLowerCase().includes(q)})());
   list.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  const typeColor={'ใบเตือนครั้งที่ 1':'#f59e0b','ใบเตือนครั้งที่ 2':'#f97316','ใบเตือนครั้งที่ 3':'#ef4444','หนังสือให้ออก':'#7f1d1d'};
+  const typeColor={'ตักเตือนโดยวาจา':'#0ea5e9','ตักเตือนด้วยลายลักษณ์อักษร ครั้งที่ 1':'#f59e0b','ตักเตือนด้วยลายลักษณ์อักษร ครั้งที่ 2':'#f97316','พักงาน ตั้งแต่ 3 - 7 วัน โดยไม่ได้รับค่าจ้างและสวัสดิการ':'#ef4444','เลิกจ้าง':'#7f1d1d'};
   return`
 <div class="ph">
-  <div><h2 style="color:#dc2626">⚠️ ใบเตือน</h2><p>บันทึกประวัติใบเตือนพนักงาน (${list.length} รายการ)</p></div>
+  <div><h2 style="color:#dc2626">⚠️ ประวัติใบเตือน</h2><p>บันทึกประวัติใบเตือนพนักงาน (${list.length} รายการ)</p></div>
   <div class="ph-actions">
     <button class="btn btn-g" onclick="apiWarningFetch().then(()=>render())">↻ รีเฟรช</button>
     ${isAdmin()?`<button class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;font:13px 'Sarabun',sans-serif" onclick="goWarningForm(null,null)">+ บันทึกใบเตือน</button>`:''}
@@ -1112,7 +1112,7 @@ function renderWarning(){
   </div>
   <div class="tbl-wrap">
   ${list.length?`<table>
-    <thead><tr><th>วันที่</th><th>ประเภท</th><th>◆ หัวข้อใบเตือน ◆</th><th>พนักงาน</th><th>รายละเอียด</th><th>บทลงโทษ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <thead><tr><th>วันที่</th><th>ระดับการตักเตือน</th><th>◆ หัวข้อใบเตือน ◆</th><th>พนักงาน</th><th>รายละเอียด</th><th>บทลงโทษ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
     <tbody>${list.map(w=>{
       const emp=S.emps.find(e=>e.id===w.employeeId);
       return`<tr>
@@ -1141,8 +1141,12 @@ function renderWarningForm(){
   const activeEmps=[...S.emps].filter(e=>e.status==='active').sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
   const selEmpId=w.employeeId||preEmpId;
   const empOpts=activeEmps.map(e=>`<option value="${e.id}" ${selEmpId===e.id?'selected':''}>${esc(e.fullName)} (${esc(e.empId)}) — ${esc(e.department||'')}</option>`).join('');
-  const TYPES=['ใบเตือนครั้งที่ 1','ใบเตือนครั้งที่ 2','ใบเตือนครั้งที่ 3','หนังสือให้ออก'];
-  const typeOpts=TYPES.map(t=>`<option value="${t}" ${w.type===t?'selected':''}>${t}</option>`).join('');
+  const TYPES=['ตักเตือนโดยวาจา','ตักเตือนด้วยลายลักษณ์อักษร ครั้งที่ 1','ตักเตือนด้วยลายลักษณ์อักษร ครั้งที่ 2','พักงาน ตั้งแต่ 3 - 7 วัน โดยไม่ได้รับค่าจ้างและสวัสดิการ','เลิกจ้าง'];
+  const typeColor2={'ตักเตือนโดยวาจา':'#0ea5e9','ตักเตือนด้วยลายลักษณ์อักษร ครั้งที่ 1':'#f59e0b','ตักเตือนด้วยลายลักษณ์อักษร ครั้งที่ 2':'#f97316','พักงาน ตั้งแต่ 3 - 7 วัน โดยไม่ได้รับค่าจ้างและสวัสดิการ':'#ef4444','เลิกจ้าง':'#7f1d1d'};
+  const typeRadios=TYPES.map(t=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;border:2px solid ${w.type===t?typeColor2[t]:'var(--bdr)'};background:${w.type===t?typeColor2[t]+'15':'#fff'};transition:all .15s">
+    <input type="radio" name="type" value="${t}" ${w.type===t?'checked':''} required style="accent-color:${typeColor2[t]}">
+    <span style="font-size:13px;font-weight:${w.type===t?'700':'500'};color:${w.type===t?typeColor2[t]:'var(--txt)'}">${t}</span>
+  </label>`).join('');
   return`
 <div class="ph">
   <div><h2 style="color:#dc2626">${isEdit?'◆ แก้ไขใบเตือน ◆':'◆ บันทึกใบเตือน ◆'}</h2>
@@ -1154,11 +1158,10 @@ function renderWarningForm(){
   <div class="form-grid">
     <div class="fg"><label class="lb">วันที่ใบเตือน <span class="req">*</span></label>
       <input type="date" name="date" value="${esc(toInputDate(w.date))}" required></div>
-    <div class="fg"><label class="lb">ประเภทใบเตือน <span class="req">*</span></label>
-      <select name="type" required>
-        <option value="">-- เลือกประเภท --</option>
-        ${typeOpts}
-      </select></div>
+    <div class="fg" style="grid-column:1/-1"><label class="lb">ระดับการตักเตือน <span class="req">*</span></label>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px" onclick="render()">
+        ${typeRadios}
+      </div></div>
     <div class="fg" style="grid-column:1/-1"><label class="lb" style="color:#dc2626;font-weight:700">◆ หัวข้อใบเตือน ◆ <span class="req">*</span></label>
       <input type="text" name="topic" value="${esc(w.topic||'')}" placeholder="ระบุหัวข้อใบเตือน" required style="border-color:#dc2626"></div>
     <div class="fg" style="grid-column:1/-1"><label class="lb">พนักงาน <span class="req">*</span></label>
