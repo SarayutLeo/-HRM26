@@ -121,6 +121,11 @@ textarea{resize:vertical;min-height:72px}
 .empty p{font-size:13px}
 /* ── Emp code ── */
 .ecode{font-family:monospace;font-size:12px;color:var(--p);font-weight:700;background:var(--pll);padding:2px 7px;border-radius:5px}
+.emp-name-link:hover{text-decoration:underline}
+/* ── Detail view ── */
+.detail-row{display:flex;flex-direction:column;gap:4px}
+.detail-label{font-size:12px;font-weight:600;color:#374151}
+.detail-value{font-size:14px;color:var(--txt)}
 /* ── Mobile Header ── */
 .mob-header{display:none;position:fixed;top:0;left:0;right:0;height:54px;background:var(--sb);z-index:150;align-items:center;padding:0 14px;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .ham{background:none;border:none;cursor:pointer;padding:8px;color:#94a3b8;font-size:18px;line-height:1;border-radius:6px;display:flex;align-items:center}
@@ -243,6 +248,7 @@ const S={
   warningEditId:null,
   warningSearch:'',
   warningDelId:null,
+  viewId:null,
 };
 
 // ── Storage ────────────────────────────────────────────────────
@@ -822,12 +828,12 @@ function renderList(){
   ${emps.length?`<table>
     <thead><tr>
       <th>#</th><th>รหัสพนักงาน</th><th>ชื่อ-นามสกุล</th><th>อายุ</th><th>แผนก</th>
-      <th>ตำแหน่ง</th><th>วันเริ่มงาน</th><th>อายุงาน</th><th>ผู้บังคับบัญชา</th><th>สถานะ</th><th>จัดการ</th>
+      <th>ตำแหน่ง</th><th>วันเริ่มงาน</th><th>อายุงาน</th><th>ผู้บังคับบัญชา</th><th>สถานะ</th>
     </tr></thead>
-    <tbody>${emps.map((e,i)=>{const grey=e.status==='resigned';return`<tr style="${grey?'color:#94a3b8':''}">
+    <tbody>${emps.map((e,i)=>{const grey=e.status==='resigned';return`<tr style="${grey?'color:#94a3b8':''}" class="emp-row">
       <td style="color:#cbd5e1;font-size:12px">${i+1}</td>
       <td><span class="ecode" style="${grey?'background:#f1f5f9;color:#94a3b8':''}">${esc(e.empId)}</span></td>
-      <td><span style="${grey?'':'font-weight:600'}">${esc(e.fullName)}</span>${e.nickname?`<span style="font-size:12px;color:${grey?'#cbd5e1':'#64748b'}"> (${esc(e.nickname)})</span>`:''}<br><span style="font-size:11px;color:${grey?'#cbd5e1':'#64748b'}">${esc(e.email||'')}</span></td>
+      <td style="cursor:pointer" onclick="viewEmp('${e.id}')"><span style="${grey?'':'font-weight:600;color:var(--p)'}" class="emp-name-link">${esc(e.fullName)}</span>${e.nickname?`<span style="font-size:12px;color:${grey?'#cbd5e1':'#64748b'}"> (${esc(e.nickname)})</span>`:''}<br><span style="font-size:11px;color:${grey?'#cbd5e1':'#64748b'}">${esc(e.email||'')}</span></td>
       <td style="text-align:center;font-size:13px">${calcAge(e.birthDate)}</td>
       <td>${esc(e.department||'-')}</td>
       <td>${esc(e.position||'-')}</td>
@@ -835,13 +841,76 @@ function renderList(){
       <td><span style="font-size:12px;color:${e.status==='active'?'#0369a1':'#64748b'};font-weight:600">${tenure(e.startDate,e.status==='resigned'?e.resignDate:null)}</span>${e.status==='resigned'?'<br><span style="font-size:10px;color:#94a3b8">ถึงวันลาออก</span>':''}</td>
       <td>${esc(e.supervisor||'-')}</td>
       <td><span class="badge ${e.status==='active'?'ba':'br'}">${e.status==='active'?'พนักงานปัจจุบัน':'ลาออกแล้ว'}</span>${e.status==='resigned'&&e.resignDate?`<br><span style="font-size:11px;color:#94a3b8">${fdate(e.resignDate)}</span>`:''}</td>
-      <td>${isAdmin()?`<button class="btn btn-sm btn-ed" onclick="editEmp('${e.id}')" title="แก้ไข">✏️</button>`:''}</td>
     </tr>`}).join('')}</tbody>
   </table>`:`<div class="empty"><div class="ei">🔍</div><h3>ไม่พบข้อมูล</h3><p>ลองเปลี่ยนคำค้นหา</p></div>`}
   </div>
 </div>
 `;
 }
+
+// ── Employee Detail (View) ─────────────────────────────────────
+function renderEmpDetail(id){
+  const e=S.emps.find(x=>x.id===id);
+  if(!e)return`<div class="ph"><div><h2>ไม่พบข้อมูล</h2></div><button class="btn btn-g" onclick="goPage('list')">← กลับ</button></div>`;
+  const grey=e.status==='resigned';
+  const totalSalary=(parseFloat(e.baseSalary)||0)+(parseFloat(e.positionAllowance)||0)+(parseFloat(e.otherBenefits)||0);
+  function row(label,value){return`<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value||'-'}</span></div>`;}
+  return`
+<div class="ph">
+  <div>
+    <h2>${esc(e.fullName)}${e.nickname?` <span style="font-weight:400;font-size:16px;color:#64748b">(${esc(e.nickname)})</span>`:''}</h2>
+    <p>${esc(e.empId||'')}${e.company?' · '+esc(e.company):''}</p>
+  </div>
+  <div class="ph-actions">
+    <button class="btn btn-g" onclick="goPage('list')">← กลับ</button>
+    ${isAdmin()?`<button class="btn btn-p" onclick="editEmp('${e.id}')">✏️ แก้ไขข้อมูล</button>`:''}
+  </div>
+</div>
+<div class="form-card">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--pl)">
+    <span class="badge ${e.status==='active'?'ba':'br'}" style="font-size:13px;padding:5px 14px">${e.status==='active'?'พนักงานปัจจุบัน':'ลาออกแล้ว'}</span>
+    ${e.status==='resigned'&&e.resignDate?`<span style="font-size:12px;color:#94a3b8">ลาออกเมื่อ ${fdate(e.resignDate)}</span>`:''}
+  </div>
+
+  <div class="fsec">ข้อมูลการทำงาน</div>
+  <div class="fg2">
+    ${row('บริษัท',esc(e.company||'-'))}
+    ${row('แผนก',esc(e.department||'-'))}
+    ${row('ตำแหน่ง',esc(e.position||'-'))}
+    ${row('ผู้บังคับบัญชา',esc(e.supervisor||'-'))}
+    ${row('วันเริ่มงาน',fdate(e.startDate))}
+    <div class="detail-row"><span class="detail-label">อายุงาน</span><span class="detail-value" style="color:var(--pd);font-weight:700">${tenure(e.startDate,e.status==='resigned'?e.resignDate:null)}${e.status==='resigned'?' <span style="font-size:11px;font-weight:400;color:#94a3b8">(ถึงวันลาออก)</span>':''}</span></div>
+  </div>
+
+  <div class="fsec">ข้อมูลส่วนตัว</div>
+  <div class="fg2">
+    <div class="detail-row"><span class="detail-label">วันเกิด / อายุ</span><span class="detail-value">${e.birthDate?fdate(e.birthDate)+' <span style="color:#64748b;font-size:13px">('+calcAge(e.birthDate)+')</span>':'-'}</span></div>
+    ${row('เบอร์ติดต่อ',esc(e.phone||'-'))}
+    ${row('อีเมล',esc(e.email||'-'))}
+    ${row('วุฒิการศึกษา',esc(e.education||'-'))}
+    <div class="detail-row fg full"><span class="detail-label">ที่อยู่</span><span class="detail-value" style="white-space:pre-line">${esc(e.address||'-')}</span></div>
+  </div>
+
+  <div class="fsec">สิทธิการลา (วัน/ปี)</div>
+  <div class="fg3">
+    ${row('ลาป่วย (ไม่มีใบรับรองแพทย์)',`<strong>${e.sickLeaveNoDoc??0}</strong> วัน`)}
+    ${row('ลาป่วย (มีใบรับรองแพทย์)',`<strong>${e.sickLeaveWithDoc??0}</strong> วัน`)}
+    ${row('ลากิจ',`<strong>${e.personalLeave??0}</strong> วัน`)}
+    ${row('ลาพักร้อน',`<strong>${e.annualLeave??0}</strong> วัน`)}
+  </div>
+
+  ${isAdmin()?`
+  <div class="fsec">ข้อมูลเงินเดือน</div>
+  <div class="fg3">
+    ${row('ฐานเงินเดือน',e.baseSalary?Number(e.baseSalary).toLocaleString('th-TH')+' บาท':'-')}
+    ${row('ค่าตำแหน่ง',e.positionAllowance?Number(e.positionAllowance).toLocaleString('th-TH')+' บาท':'-')}
+    ${row('ค่าสวัสดิการอื่น',e.otherBenefits?Number(e.otherBenefits).toLocaleString('th-TH')+' บาท':'-')}
+    <div class="detail-row"><span class="detail-label">รายได้รวม/เดือน</span><span class="detail-value" style="font-size:16px;font-weight:700;color:var(--pd)">${totalSalary>0?totalSalary.toLocaleString('th-TH')+' บาท':'-'}</span></div>
+  </div>`:''}
+</div>
+${renderEmpTrainings(e.id)}
+${renderEmpWarnings(e.id)}
+`;}
 
 // ── Form ───────────────────────────────────────────────────────
 function renderForm(){
@@ -893,6 +962,10 @@ function renderForm(){
       <input type="date" name="startDate" value="${esc(toInputDate(e.startDate))}" required></div>
     <div class="fg full"><label class="lb">ที่อยู่</label>
       <textarea name="address" placeholder="ที่อยู่ปัจจุบัน">${esc(e.address||'')}</textarea></div>
+    <div class="fg"><label class="lb">เบอร์ติดต่อ</label>
+      <input type="tel" name="phone" value="${esc(e.phone||'')}" placeholder="เช่น 08x-xxx-xxxx"></div>
+    <div class="fg"><label class="lb">วุฒิการศึกษา</label>
+      <input type="text" name="education" value="${esc(e.education||'')}" placeholder="เช่น ปริญญาตรี สาขา..."></div>
   </div>
 
   <div class="fsec">สิทธิการลา (จำนวนวัน/ปี)</div>
@@ -1363,6 +1436,7 @@ function render(){
   if(S.loading){content='<div style="padding:60px;text-align:center;color:#64748b">⏳ กำลังโหลดข้อมูล...</div>'}
   else if(S.page==='dashboard')content=renderDash();
   else if(S.page==='list')content=renderList();
+  else if(S.page==='detail')content=renderEmpDetail(S.viewId);
   else if(S.page==='form')content=isAdmin()?renderForm():(S.page='list',renderList());
   else if(S.page==='depts')content=renderDepts();
   else if(S.page==='dept-form')content=isAdmin()?renderDeptForm():(S.page='depts',renderDepts());
@@ -1414,6 +1488,7 @@ function goPage(p){
   S.page=p;
   S.menuOpen=false;
   if(p!=='form')S.editId=null;
+  if(p!=='detail')S.viewId=null;
   if(p!=='dept-form')S.deptEditId=null;
   if(p!=='user-form')S.userEditId=null;
   if(p!=='training-form'){S.trainingEditId=null;S._trainingPreFill='';}
@@ -1459,6 +1534,7 @@ function toggleRD(v){
   if(wrap)wrap.style.display=v==='resigned'?'flex':'none';
   if(inp){inp.required=v==='resigned';if(v!=='resigned')inp.value=''}
 }
+function viewEmp(id){S.viewId=id;S.page='detail';render();window.scrollTo(0,0)}
 function editEmp(id){S.editId=id;S.page='form';render();window.scrollTo(0,0)}
 function confirmDel(id){S.delId=id;render()}
 function cancelDel(){S.delId=null;render()}
@@ -1493,6 +1569,8 @@ async function submitForm(ev){
     email:fd.get('email').trim(),
     supervisor:fd.get('supervisor').trim(),
     birthDate:fd.get('birthDate')||'',
+    phone:fd.get('phone').trim(),
+    education:fd.get('education').trim(),
     sickLeaveNoDoc:parseInt(fd.get('sickLeaveNoDoc'))||0,
     sickLeaveWithDoc:parseInt(fd.get('sickLeaveWithDoc'))||0,
     personalLeave:parseInt(fd.get('personalLeave'))||0,
@@ -1510,7 +1588,9 @@ async function submitForm(ev){
   lsave();
   const ok=await apiPost({action:isEdit?'update':'create',data:emp});
   toast(isEdit?'แก้ไขข้อมูลสำเร็จ':'เพิ่มพนักงานสำเร็จ','ok');
-  S.editId=null;S.page='list';render();
+  if(isEdit){const eid=S.editId;S.editId=null;S.viewId=eid;S.page='detail';}
+  else{S.editId=null;S.page='list';}
+  render();
 }
 
 // ── Dept handlers ──────────────────────────────────────────────

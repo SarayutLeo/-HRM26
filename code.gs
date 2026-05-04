@@ -12,14 +12,14 @@
 const SHEET_EMP  = 'พนักงาน';
 const EMP_HEADERS = [
   'id', 'empId', 'fullName', 'nickname', 'company', 'department', 'position',
-  'startDate', 'birthDate', 'address', 'email', 'supervisor',
+  'startDate', 'birthDate', 'address', 'phone', 'education', 'email', 'supervisor',
   'sickLeaveNoDoc', 'sickLeaveWithDoc', 'personalLeave', 'annualLeave',
   'baseSalary', 'positionAllowance', 'otherBenefits',
   'status', 'resignDate', 'createdAt', 'updatedAt'
 ];
 const EMP_LABELS = [
   'ID (ระบบ)', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'บริษัท', 'แผนก', 'ตำแหน่ง',
-  'วันที่เริ่มงาน', 'วันเกิด', 'ที่อยู่', 'อีเมล', 'ผู้บังคับบัญชา',
+  'วันที่เริ่มงาน', 'วันเกิด', 'ที่อยู่', 'เบอร์ติดต่อ', 'วุฒิการศึกษา', 'อีเมล', 'ผู้บังคับบัญชา',
   'ลาป่วย(ไม่มีใบ)', 'ลาป่วย(มีใบ)', 'ลากิจ', 'ลาพักร้อน',
   'เงินเดือนฐาน', 'ค่าตำแหน่ง', 'สวัสดิการอื่น',
   'สถานะ', 'วันที่ลาออก', 'วันที่สร้าง', 'วันที่แก้ไข'
@@ -89,7 +89,7 @@ function ensureColumns(sheet, labels) {
 }
 
 function getEmpSheet()  {
-  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,90,140,120,130,110,100,200,160,150,100,100,80,90,110,110,110,120,110,160,160]);
+  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,90,140,120,130,110,100,200,130,150,160,150,100,100,80,90,110,110,110,120,110,160,160]);
   ensureColumns(s, EMP_LABELS);
   return s;
 }
