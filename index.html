@@ -956,16 +956,16 @@ function renderForm(){
       <input type="text" name="supervisor" id="supervisor-inp" value="${esc(e.supervisor||'')}" placeholder="เลือกแผนกเพื่อกรอกอัตโนมัติ"></div>
     <div class="fg"><label class="lb">อีเมล</label>
       <input type="email" name="email" value="${esc(e.email||'')}" placeholder="email@company.com"></div>
+    <div class="fg"><label class="lb">เบอร์ติดต่อ</label>
+      <input type="text" name="phone" value="${esc(e.phone||'')}" placeholder="เช่น 0812345678"></div>
     <div class="fg"><label class="lb">วันเกิด</label>
       <input type="date" name="birthDate" value="${esc(toInputDate(e.birthDate))}"></div>
     <div class="fg"><label class="lb">วันที่เริ่มงาน <span class="req">*</span></label>
       <input type="date" name="startDate" value="${esc(toInputDate(e.startDate))}" required></div>
+    <div class="fg full"><label class="lb">วุฒิการศึกษา</label>
+      <input type="text" name="education" value="${esc(e.education||'')}" placeholder="เช่น ปริญญาตรี วิศวกรรมศาสตร์ มหาวิทยาลัย..."></div>
     <div class="fg full"><label class="lb">ที่อยู่</label>
       <textarea name="address" placeholder="ที่อยู่ปัจจุบัน">${esc(e.address||'')}</textarea></div>
-    <div class="fg"><label class="lb">เบอร์ติดต่อ</label>
-      <input type="tel" name="phone" value="${esc(e.phone||'')}" placeholder="เช่น 08x-xxx-xxxx"></div>
-    <div class="fg"><label class="lb">วุฒิการศึกษา</label>
-      <input type="text" name="education" value="${esc(e.education||'')}" placeholder="เช่น ปริญญาตรี สาขา..."></div>
   </div>
 
   <div class="fsec">สิทธิการลา (จำนวนวัน/ปี)</div>
