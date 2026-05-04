@@ -289,7 +289,8 @@ async function apiDeptPost(body){
 async function apiLogin(username,password){
   if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อฐานข้อมูล กรุณาตั้งค่า API URL ก่อน'};
   try{
-    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'login',data:{username,password}})});
+    const url=S.apiUrl+'?action=login&username='+encodeURIComponent(username)+'&password='+encodeURIComponent(password);
+    const r=await fetch(url,{redirect:'follow'});
     return JSON.parse(await r.text());
   }catch{return{success:false,error:'เชื่อมต่อไม่ได้ กรุณาลองใหม่'}}
 }

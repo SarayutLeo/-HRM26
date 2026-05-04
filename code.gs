@@ -155,6 +155,16 @@ function doGet(e) {
     if (action === 'listUsers') {
       return jsonResp({ success: true, data: readSheet(getUserSheet(), USER_HEADERS) });
     }
+    if (action === 'login') {
+      const username = e.parameter.username || '';
+      const password = e.parameter.password || '';
+      const users = readSheet(getUserSheet(), USER_HEADERS);
+      const user = users.find(u => u.username === username && u.password === password);
+      if (user) {
+        return jsonResp({ success: true, user: { id: user.id, username: user.username, name: user.name, role: user.role } });
+      }
+      return jsonResp({ success: false, error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
+    }
     return jsonResp({ success: false, error: 'Unknown action' });
   } catch (err) {
     return jsonResp({ success: false, error: err.toString() });
