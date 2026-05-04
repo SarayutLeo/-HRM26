@@ -260,7 +260,7 @@ async function apiFetch(){
 async function apiPost(body){
   if(!S.apiUrl)return false;
   try{
-    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify(body)});
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
     const text=await r.text();
     const d=JSON.parse(text);
     if(d.success){await apiFetch();return true}
@@ -280,7 +280,7 @@ async function apiDeptFetch(){
 async function apiDeptPost(body){
   if(!S.apiUrl)return false;
   try{
-    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify(body)});
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
     const d=await r.json();
     if(d.success){await apiDeptFetch();return true}
     return false;
@@ -289,7 +289,7 @@ async function apiDeptPost(body){
 async function apiLogin(username,password){
   if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อฐานข้อมูล กรุณาตั้งค่า API URL ก่อน'};
   try{
-    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action:'login',data:{username,password}})});
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'login',data:{username,password}})});
     return JSON.parse(await r.text());
   }catch{return{success:false,error:'เชื่อมต่อไม่ได้ กรุณาลองใหม่'}}
 }
@@ -305,7 +305,7 @@ async function apiUserFetch(){
 async function apiUserPost(body){
   if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อ'};
   try{
-    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify(body)});
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
     return JSON.parse(await r.text());
   }catch{return{success:false,error:'เชื่อมต่อไม่ได้'}}
 }
@@ -1343,11 +1343,11 @@ async function syncLocalToSheets(){
   let ok=0,fail=0;
   for(const d of S.depts){
     const action=sheetsDeptIds.has(d.id)?'updateDept':'createDept';
-    try{const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action,data:d})});const resp=JSON.parse(await r.text());if(resp.success)ok++;else fail++}catch{fail++}
+    try{const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action,data:d})});const resp=JSON.parse(await r.text());if(resp.success)ok++;else fail++}catch{fail++}
   }
   for(const e of S.emps){
     const action=sheetsEmpIds.has(e.id)?'update':'create';
-    try{const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action,data:e})});const resp=JSON.parse(await r.text());if(resp.success)ok++;else fail++}catch{fail++}
+    try{const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action,data:e})});const resp=JSON.parse(await r.text());if(resp.success)ok++;else fail++}catch{fail++}
   }
   S.localBackup=null;backupClear();
   await Promise.all([apiFetch(),apiDeptFetch()]);
