@@ -14,14 +14,14 @@ const EMP_HEADERS = [
   'id', 'empId', 'fullName', 'nickname', 'company', 'department', 'position',
   'startDate', 'birthDate', 'address', 'phone', 'education', 'email', 'supervisor',
   'sickLeaveNoDoc', 'sickLeaveWithDoc', 'personalLeave', 'annualLeave',
-  'baseSalary', 'positionAllowance', 'otherBenefits',
+  'salaryStartDate', 'baseSalary', 'positionAllowance', 'otherBenefits', 'housingAllowance',
   'status', 'resignDate', 'createdAt', 'updatedAt'
 ];
 const EMP_LABELS = [
   'ID (ระบบ)', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'บริษัท', 'แผนก', 'ตำแหน่ง',
   'วันที่เริ่มงาน', 'วันเกิด', 'ที่อยู่', 'เบอร์ติดต่อ', 'วุฒิการศึกษา', 'อีเมล', 'ผู้บังคับบัญชา',
   'ลาป่วย(ไม่มีใบ)', 'ลาป่วย(มีใบ)', 'ลากิจ', 'ลาพักร้อน',
-  'เงินเดือนฐาน', 'ค่าตำแหน่ง', 'สวัสดิการอื่น',
+  'วันที่เริ่ม(เงินเดือน)', 'เงินเดือนฐาน', 'ค่าตำแหน่ง', 'สวัสดิการอื่น', 'ค่าที่พัก',
   'สถานะ', 'วันที่ลาออก', 'วันที่สร้าง', 'วันที่แก้ไข'
 ];
 
@@ -44,6 +44,23 @@ const WARNING_LABELS  = ['ID', 'เลขที่ใบเตือน', 'ว�
 const SHEET_TRAINING  = 'ประวัติอบรม';
 const TRAINING_HEADERS = ['id', 'date', 'topic', 'duration', 'employeeIds', 'cost', 'createdAt', 'updatedAt'];
 const TRAINING_LABELS  = ['ID', 'วันที่อบรม', 'หัวข้อการอบรม', 'ระยะเวลา', 'รหัสพนักงาน (IDs)', 'ค่าใช้จ่าย', 'วันที่สร้าง', 'วันที่แก้ไข'];
+
+// ── Sheet: เงินเดือน ───────────────────────────────────────────
+const SHEET_PAYROLL  = 'เงินเดือน';
+const PAYROLL_HEADERS = [
+  'id', 'year', 'month', 'empId', 'empName', 'department',
+  'baseSalary', 'ot1', 'ot15', 'ot3', 'otAmount',
+  'diligence', 'perDiem', 'posAllowance', 'welfare', 'housing', 'backPay',
+  'totalIncome', 'ssn', 'tax', 'gsl', 'excessLeave', 'companyDebt',
+  'totalDeduct', 'netPay', 'updatedAt'
+];
+const PAYROLL_LABELS = [
+  'ID', 'ปี', 'เดือน', 'รหัสพนักงาน', 'ชื่อพนักงาน', 'แผนก',
+  'ฐานเงินเดือน', 'OT 1x (ชม)', 'OT 1.5x (ชม)', 'OT 3x (ชม)', 'รวม OT',
+  'เบี้ยขยัน', 'เบี้ยเลี้ยง', 'ค่าตำแหน่ง', 'ค่าสวัสดิการ', 'ค่าที่พัก', 'ตกเบิก',
+  'รายรับรวม', 'ประกันสังคม', 'ภาษี', 'กยศ', 'หักลาเกิน', 'ใช้หนี้บริษัท',
+  'รายจ่ายรวม', 'คงเหลือ', 'วันที่บันทึก'
+];
 
 // ── Sheet helpers ──────────────────────────────────────────────
 function initSheet(name, labels, widths) {
@@ -120,6 +137,12 @@ function getTrainingSheet() {
   ensureColumns(s, TRAINING_LABELS);
   return s;
 }
+function getPayrollSheet() {
+  const s = initSheet(SHEET_PAYROLL, PAYROLL_LABELS,
+    [180,60,60,120,160,120, 110,80,80,80,90, 90,90,90,90,90,90, 100,90,90,80,90,100, 100,100,160]);
+  ensureColumns(s, PAYROLL_LABELS);
+  return s;
+}
 
 function rowToObj(headers, row) {
   const obj = {};
@@ -180,6 +203,14 @@ function doGet(e) {
     }
     if (action === 'listWarnings') {
       return jsonResp({ success: true, data: readSheet(getWarningSheet(), WARNING_HEADERS) });
+    }
+    if (action === 'listPayrolls') {
+      const year  = e.parameter.year  ? String(e.parameter.year)  : '';
+      const month = e.parameter.month ? String(e.parameter.month) : '';
+      let rows = readSheet(getPayrollSheet(), PAYROLL_HEADERS);
+      if (year)  rows = rows.filter(r => String(r.year)  === year);
+      if (month) rows = rows.filter(r => String(r.month) === month);
+      return jsonResp({ success: true, data: rows });
     }
     if (action === 'login') {
       const username = e.parameter.username || '';
@@ -323,6 +354,74 @@ function doPost(e) {
       const row = findRowById(sheet, id);
       if (row < 0) return jsonResp({ success: false, error: 'Warning not found' });
       sheet.deleteRow(row);
+      return jsonResp({ success: true });
+    }
+
+    // ── Payroll ──
+    if (action === 'savePayroll') {
+      const year    = String(body.year  || '');
+      const month   = String(body.month || '');
+      const empData = body.data    || {};
+      const empMeta = body.empMeta || [];
+      const sheet   = getPayrollSheet();
+      const now     = new Date().toISOString();
+      const metaMap = {};
+      empMeta.forEach(function(m){ metaMap[m.id] = m; });
+      for (var empId in empData) {
+        var pd   = empData[empId];
+        var meta = metaMap[empId] || {};
+        var base  = parseFloat(meta.baseSalary) || 0;
+        var hRate = base / 30 / 8;
+        var otAmt = Math.round(
+          ((parseFloat(pd.ot1)||0)*hRate) +
+          ((parseFloat(pd.ot15)||0)*hRate*1.5) +
+          ((parseFloat(pd.ot3)||0)*hRate*3)
+        );
+        var totalIncome = Math.round(
+          base + otAmt +
+          (parseFloat(pd.diligence)||0) + (parseFloat(pd.perDiem)||0) +
+          (parseFloat(pd.posAllowance)||0) + (parseFloat(pd.welfare)||0) +
+          (parseFloat(pd.housing)||0) + (parseFloat(pd.backPay)||0)
+        );
+        var totalDeduct = Math.round(
+          (parseFloat(pd.ssn)||0) + (parseFloat(pd.tax)||0) +
+          (parseFloat(pd.gsl)||0) + (parseFloat(pd.excessLeave)||0) +
+          (parseFloat(pd.companyDebt)||0)
+        );
+        var rec = {
+          id: 'PL_' + (meta.empId||empId) + '_' + year + '_' + month,
+          year: year, month: month,
+          empId: meta.empId || empId,
+          empName: meta.fullName || '',
+          department: meta.department || '',
+          baseSalary: base,
+          ot1: parseFloat(pd.ot1)||0,
+          ot15: parseFloat(pd.ot15)||0,
+          ot3: parseFloat(pd.ot3)||0,
+          otAmount: otAmt,
+          diligence: parseFloat(pd.diligence)||0,
+          perDiem: parseFloat(pd.perDiem)||0,
+          posAllowance: parseFloat(pd.posAllowance)||0,
+          welfare: parseFloat(pd.welfare)||0,
+          housing: parseFloat(pd.housing)||0,
+          backPay: parseFloat(pd.backPay)||0,
+          totalIncome: totalIncome,
+          ssn: parseFloat(pd.ssn)||0,
+          tax: parseFloat(pd.tax)||0,
+          gsl: parseFloat(pd.gsl)||0,
+          excessLeave: parseFloat(pd.excessLeave)||0,
+          companyDebt: parseFloat(pd.companyDebt)||0,
+          totalDeduct: totalDeduct,
+          netPay: totalIncome - totalDeduct,
+          updatedAt: now
+        };
+        var rowIdx = findRowById(sheet, rec.id);
+        if (rowIdx > 0) {
+          sheet.getRange(rowIdx, 1, 1, PAYROLL_HEADERS.length).setValues([objToRow(PAYROLL_HEADERS, rec)]);
+        } else {
+          sheet.appendRow(objToRow(PAYROLL_HEADERS, rec));
+        }
+      }
       return jsonResp({ success: true });
     }
 

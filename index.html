@@ -621,9 +621,39 @@ function setPL(empId,field,value){
   S.payrollData[empId][field]=parseFloat(value)||0;
   updatePRRow(empId);
 }
-function savePayroll(){
+async function savePayroll(){
   plSave(S.payrollYear,S.payrollMonth,S.payrollData);
-  toast('บันทึกข้อมูลเงินเดือนสำเร็จ','ok');
+  if(S.apiUrl&&S.connected){
+    const empMeta=S.emps.filter(e=>e.status==='active').map(e=>({id:e.id,empId:e.empId,fullName:e.fullName,department:e.department,baseSalary:e.baseSalary}));
+    try{
+      const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',body:JSON.stringify({action:'savePayroll',year:S.payrollYear,month:S.payrollMonth,data:S.payrollData,empMeta})});
+      const d=JSON.parse(await r.text());
+      toast(d.success?'บันทึกลง Google Sheets สำเร็จ':'บันทึก Local แล้ว (Sheets ไม่ตอบสนอง)',d.success?'ok':'');
+    }catch{toast('บันทึก Local แล้ว (ไม่มีการเชื่อมต่อ)','');}
+  }else{
+    toast('บันทึกข้อมูลเงินเดือนสำเร็จ','ok');
+  }
+}
+async function syncPayrollFromAPI(){
+  if(!S.apiUrl||!S.connected)return;
+  try{
+    const r=await fetch(S.apiUrl+`?action=listPayrolls&year=${S.payrollYear}&month=${S.payrollMonth}`,{redirect:'follow'});
+    const d=JSON.parse(await r.text());
+    if(!d.success||!d.data.length)return;
+    d.data.forEach(row=>{
+      S.payrollData[row.empId]={
+        ot1:parseFloat(row.ot1)||0,ot15:parseFloat(row.ot15)||0,ot3:parseFloat(row.ot3)||0,
+        diligence:parseFloat(row.diligence)||0,perDiem:parseFloat(row.perDiem)||0,
+        posAllowance:parseFloat(row.posAllowance)||0,welfare:parseFloat(row.welfare)||0,
+        housing:parseFloat(row.housing)||0,backPay:parseFloat(row.backPay)||0,
+        ssn:parseFloat(row.ssn)||0,tax:parseFloat(row.tax)||0,
+        gsl:parseFloat(row.gsl)||0,excessLeave:parseFloat(row.excessLeave)||0,
+        companyDebt:parseFloat(row.companyDebt)||0,
+      };
+    });
+    plSave(S.payrollYear,S.payrollMonth,S.payrollData);
+    render();
+  }catch{}
 }
 function updatePRRow(empId){
   const{income,deduct,net,otAmt}=prCalc(empId);
@@ -766,8 +796,8 @@ ${rows}
 </table>
 </div></div>`:`<div class="empty"><div class="ei">👥</div><h3>ไม่พบพนักงาน</h3><p>ลองเปลี่ยนตัวกรอง</p></div>`}`;
 }
-function setPayrollMonth(v){S.payrollMonth=parseInt(v);loadPayroll();render()}
-function setPayrollYear(v){S.payrollYear=parseInt(v);loadPayroll();render()}
+function setPayrollMonth(v){S.payrollMonth=parseInt(v);loadPayroll();render();syncPayrollFromAPI();}
+function setPayrollYear(v){S.payrollYear=parseInt(v);loadPayroll();render();syncPayrollFromAPI();}
 function setPayrollDept(v){S.payrollDept=v;render()}
 function setPayrollCompany(v){
   S.payrollCompany=v;
@@ -1741,7 +1771,7 @@ function goPage(p){
   if(p==='dashboard'){S.dashDept='all';S.dashYear=new Date().getFullYear();}
   if(p==='list'){S.filterSt='all';S.filterEmpType='all';S.filterCompany='all';S.filterDept='all';S.filterPosition='all';S.search='';}
   if(p==='users'&&isAdmin()&&!S.users.length)apiUserFetch().then(()=>render());
-  if(p==='payroll')loadPayroll();
+  if(p==='payroll'){loadPayroll();syncPayrollFromAPI();}
   render();window.scrollTo(0,0);
 }
 function toggleMenu(){S.menuOpen=!S.menuOpen;render()}
