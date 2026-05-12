@@ -619,8 +619,11 @@ function prCalc(empId){
 function setPL(empId,field,value){
   if(!S.payrollData[empId])S.payrollData[empId]={};
   S.payrollData[empId][field]=parseFloat(value)||0;
-  plSave(S.payrollYear,S.payrollMonth,S.payrollData);
   updatePRRow(empId);
+}
+function savePayroll(){
+  plSave(S.payrollYear,S.payrollMonth,S.payrollData);
+  toast('บันทึกข้อมูลเงินเดือนสำเร็จ','ok');
 }
 function updatePRRow(empId){
   const{income,deduct,net,otAmt}=prCalc(empId);
@@ -702,6 +705,7 @@ function renderPayroll(){
   </div>
   <div class="ph-actions">
     <button class="btn btn-g" onclick="exportPayrollCSV()">⬇️ ส่งออก CSV</button>
+    <button class="btn btn-p" onclick="savePayroll()">💾 บันทึก</button>
   </div>
 </div>
 <div class="card" style="margin-bottom:14px;padding:12px 16px">
