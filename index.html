@@ -182,6 +182,23 @@ textarea{resize:vertical;min-height:72px}
   .form-card{padding:16px}
   .stats{grid-template-columns:1fr 1fr}
 }
+/* ── Payroll ── */
+.pr-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pr-tbl{border-collapse:collapse;font-size:12px;width:max-content}
+.pr-tbl thead th{padding:6px 8px;font-size:10px;font-weight:700;white-space:nowrap;position:sticky;top:0;z-index:5;border-bottom:1px solid var(--pl)}
+.pr-tbl td{padding:4px 6px;border-bottom:1px solid #f8fafc;vertical-align:middle;white-space:nowrap}
+.pr-tbl tbody tr:hover td{background:#fafeff}
+.pr-tbl .pr-sum td{background:#f0f9ff;font-weight:700;border-top:2px solid var(--pl)}
+.pri{padding:3px 5px;border:1.5px solid var(--bdr);border-radius:4px;font:12px 'Sarabun',sans-serif;color:var(--txt);background:#fafafa;outline:none;text-align:right;-moz-appearance:textfield}
+.pri::-webkit-outer-spin-button,.pri::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pri:focus{border-color:var(--p);background:#fff}
+.prc{font-weight:700;text-align:right;display:block;white-space:nowrap}
+.pr-income{color:#059669}.pr-deduct{color:#dc2626}
+.pr-net-pos{color:#059669;font-size:13px;font-weight:700}.pr-net-neg{color:#dc2626;font-size:13px;font-weight:700}
+.th-base{background:var(--pll);color:var(--pd)}.th-ot{background:#dbeafe;color:#1e40af;text-align:center}
+.th-add{background:#e0f2fe;color:#0369a1;text-align:center}.th-inc{background:#d1fae5;color:#065f46;text-align:center}
+.th-de{background:#fef3c7;color:#92400e;text-align:center}.th-dec{background:#fee2e2;color:#991b1b;text-align:center}
+.td-inc{background:#f0fdf4}.td-dec{background:#fff5f5}
 /* ── Login Page ── */
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--sb);padding:20px}
 .login-box{background:#fff;border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
@@ -249,6 +266,11 @@ const S={
   warningSearch:'',
   warningDelId:null,
   viewId:null,
+  payrollMonth:new Date().getMonth()+1,
+  payrollYear:new Date().getFullYear(),
+  payrollDept:'all',
+  payrollCompany:'all',
+  payrollData:{},
 };
 
 // ── Storage ────────────────────────────────────────────────────
@@ -259,6 +281,8 @@ function dsave(){try{localStorage.setItem('hrm_depts',JSON.stringify(S.depts))}c
 function backupSave(b){try{localStorage.setItem('hrm_backup',JSON.stringify(b))}catch{}}
 function backupLoad(){try{const b=localStorage.getItem('hrm_backup');return b?JSON.parse(b):null}catch{return null}}
 function backupClear(){try{localStorage.removeItem('hrm_backup')}catch{}}
+function plLoad(y,m){try{return JSON.parse(localStorage.getItem(`hrm_pl_${y}_${m}`)||'{}')}catch{return{}}}
+function plSave(y,m,d){try{localStorage.setItem(`hrm_pl_${y}_${m}`,JSON.stringify(d))}catch{}}
 
 // ── API (Google Apps Script) ───────────────────────────────────
 async function apiFetch(){
@@ -557,6 +581,220 @@ function renderUserForm(){
 </form>`;
 }
 
+// ── Payroll Helpers ────────────────────────────────────────────
+function calcSSN(base){return Math.min(Math.round(Math.max(base,0)*0.05),750)}
+function calcTax(monthlyIncome){
+  if(monthlyIncome<=0)return 0;
+  const annual=monthlyIncome*12;
+  const expense=Math.min(annual*0.5,100000);
+  const annualSSN=Math.min(Math.max(monthlyIncome,0)*0.05*12,9000);
+  let taxable=Math.max(0,annual-expense-60000-annualSSN);
+  const bands=[[150000,0],[150000,.05],[200000,.10],[250000,.15],[250000,.20],[1000000,.25],[3000000,.30],[1/0,.35]];
+  let tax=0;
+  for(const[lim,rate]of bands){if(taxable<=0)break;const p=Math.min(taxable,lim);tax+=p*rate;taxable-=p}
+  return Math.round(tax/12);
+}
+function loadPayroll(){
+  const saved=plLoad(S.payrollYear,S.payrollMonth);
+  S.payrollData={};
+  S.emps.filter(e=>e.status==='active').forEach(e=>{
+    if(saved[e.id]){S.payrollData[e.id]={...saved[e.id]};return}
+    const base=parseFloat(e.baseSalary)||0;
+    const pos=parseFloat(e.positionAllowance)||0;
+    const welfare=parseFloat(e.otherBenefits)||0;
+    const housing=parseFloat(e.housingAllowance)||0;
+    const income=base+pos+welfare+housing;
+    S.payrollData[e.id]={ot1:0,ot15:0,ot3:0,diligence:0,perDiem:0,posAllowance:pos,welfare,housing,backPay:0,ssn:calcSSN(base),tax:calcTax(income),gsl:0,excessLeave:0,companyDebt:0};
+  });
+}
+function prCalc(empId){
+  const e=S.emps.find(x=>x.id===empId);if(!e)return{income:0,deduct:0,net:0,otAmt:0};
+  const pd=S.payrollData[empId]||{};
+  const base=parseFloat(e.baseSalary)||0,hRate=base/30/8;
+  const otAmt=Math.round(((parseFloat(pd.ot1)||0)*hRate)+((parseFloat(pd.ot15)||0)*hRate*1.5)+((parseFloat(pd.ot3)||0)*hRate*3));
+  const income=Math.round(base+otAmt+(parseFloat(pd.diligence)||0)+(parseFloat(pd.perDiem)||0)+(parseFloat(pd.posAllowance)||0)+(parseFloat(pd.welfare)||0)+(parseFloat(pd.housing)||0)+(parseFloat(pd.backPay)||0));
+  const deduct=Math.round((parseFloat(pd.ssn)||0)+(parseFloat(pd.tax)||0)+(parseFloat(pd.gsl)||0)+(parseFloat(pd.excessLeave)||0)+(parseFloat(pd.companyDebt)||0));
+  return{income,deduct,net:income-deduct,otAmt};
+}
+function setPL(empId,field,value){
+  if(!S.payrollData[empId])S.payrollData[empId]={};
+  S.payrollData[empId][field]=parseFloat(value)||0;
+  plSave(S.payrollYear,S.payrollMonth,S.payrollData);
+  updatePRRow(empId);
+}
+function updatePRRow(empId){
+  const{income,deduct,net,otAmt}=prCalc(empId);
+  const fmt=v=>Math.round(v).toLocaleString('th-TH');
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=fmt(v)};
+  s(`pr-${empId}-ot`,otAmt);s(`pr-${empId}-inc`,income);s(`pr-${empId}-dec`,deduct);
+  const nel=document.getElementById(`pr-${empId}-net`);
+  if(nel){nel.textContent=fmt(net);nel.className='prc '+(net<0?'pr-net-neg':'pr-net-pos')}
+  let ti=0,td=0,tn=0;
+  let emps=S.emps.filter(e=>e.status==='active');
+  if(S.payrollCompany!=='all')emps=emps.filter(e=>e.company===S.payrollCompany);
+  if(S.payrollDept!=='all')emps=emps.filter(e=>e.department===S.payrollDept);
+  emps.forEach(e=>{const c=prCalc(e.id);ti+=c.income;td+=c.deduct;tn+=c.net});
+  s('pr-sum-inc',ti);s('pr-sum-dec',td);
+  const sn=document.getElementById('pr-sum-net');
+  if(sn){sn.textContent=fmt(tn);sn.className='prc '+(tn<0?'pr-net-neg':'pr-net-pos')}
+}
+
+// ── Payroll Render ──────────────────────────────────────────────
+function renderPayroll(){
+  const MTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const curY=new Date().getFullYear();
+  let emps=S.emps.filter(e=>e.status==='active');
+  if(S.payrollCompany!=='all')emps=emps.filter(e=>e.company===S.payrollCompany);
+  if(S.payrollDept!=='all')emps=emps.filter(e=>e.department===S.payrollDept);
+  emps.sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
+  const fmt=v=>Math.round(v).toLocaleString('th-TH');
+  const inp=(eid,field,val,w=62)=>`<input class="pri" type="number" min="0" step="0.5" style="width:${w}px" value="${val||''}" oninput="setPL('${eid}','${field}',this.value)">`;
+  const copts=COMPANIES.map(c=>`<option value="${esc(c)}"${S.payrollCompany===c?' selected':''}>${esc(c)}</option>`).join('');
+  const deptPool=S.depts.filter(d=>S.payrollCompany==='all'||d.company===S.payrollCompany);
+  const deptNames=[...new Set(deptPool.map(d=>d.name))].sort((a,b)=>a.localeCompare(b,'th'));
+  const dopts=deptNames.map(n=>`<option value="${esc(n)}"${S.payrollDept===n?' selected':''}>${esc(n)}</option>`).join('');
+  const mopts=MTHS.map((m,i)=>`<option value="${i+1}"${S.payrollMonth===i+1?' selected':''}>${m}</option>`).join('');
+  const yopts=[curY-2,curY-1,curY,curY+1].map(y=>`<option value="${y}"${S.payrollYear===y?' selected':''}>${y}</option>`).join('');
+  let totalBase=0,totalOT=0,totalInc=0,totalDec=0,totalNet=0;
+  const rows=emps.map((e,i)=>{
+    const pd=S.payrollData[e.id]||{};
+    const base=parseFloat(e.baseSalary)||0,h=base/30/8;
+    const ot1=parseFloat(pd.ot1)||0,ot15=parseFloat(pd.ot15)||0,ot3=parseFloat(pd.ot3)||0;
+    const otAmt=Math.round((ot1*h)+(ot15*h*1.5)+(ot3*h*3));
+    const diligence=parseFloat(pd.diligence)||0,perDiem=parseFloat(pd.perDiem)||0;
+    const pos=parseFloat(pd.posAllowance)||0,welfare=parseFloat(pd.welfare)||0,housing=parseFloat(pd.housing)||0,backPay=parseFloat(pd.backPay)||0;
+    const income=Math.round(base+otAmt+diligence+perDiem+pos+welfare+housing+backPay);
+    const ssn=parseFloat(pd.ssn)||0,tax=parseFloat(pd.tax)||0;
+    const gsl=parseFloat(pd.gsl)||0,exLeave=parseFloat(pd.excessLeave)||0,debt=parseFloat(pd.companyDebt)||0;
+    const deduct=Math.round(ssn+tax+gsl+exLeave+debt);
+    const net=income-deduct;
+    totalBase+=base;totalOT+=otAmt;totalInc+=income;totalDec+=deduct;totalNet+=net;
+    return`<tr>
+      <td style="text-align:center;color:#cbd5e1;font-size:11px">${i+1}</td>
+      <td><span class="ecode" style="font-size:11px">${esc(e.empId)}</span></td>
+      <td><strong>${esc(e.fullName)}</strong>${e.nickname?` <span style="color:#94a3b8;font-size:11px">(${esc(e.nickname)})</span>`:''}</td>
+      <td style="color:var(--muted)">${esc(e.department||'-')}</td>
+      <td style="text-align:right;font-weight:600;color:var(--pd)">${fmt(base)}</td>
+      <td>${inp(e.id,'ot1',ot1||'')}</td>
+      <td>${inp(e.id,'ot15',ot15||'')}</td>
+      <td>${inp(e.id,'ot3',ot3||'')}</td>
+      <td><span id="pr-${e.id}-ot" class="prc" style="color:#1d4ed8;min-width:60px">${fmt(otAmt)}</span></td>
+      <td>${inp(e.id,'diligence',diligence||'',72)}</td>
+      <td>${inp(e.id,'perDiem',perDiem||'',72)}</td>
+      <td>${inp(e.id,'posAllowance',pos||'',72)}</td>
+      <td>${inp(e.id,'welfare',welfare||'',72)}</td>
+      <td>${inp(e.id,'housing',housing||'',72)}</td>
+      <td>${inp(e.id,'backPay',backPay||'',72)}</td>
+      <td class="td-inc"><span id="pr-${e.id}-inc" class="prc pr-income" style="min-width:70px">${fmt(income)}</span></td>
+      <td>${inp(e.id,'ssn',ssn||'',68)}</td>
+      <td>${inp(e.id,'tax',tax||'',68)}</td>
+      <td>${inp(e.id,'gsl',gsl||'',60)}</td>
+      <td>${inp(e.id,'excessLeave',exLeave||'',60)}</td>
+      <td>${inp(e.id,'companyDebt',debt||'',60)}</td>
+      <td class="td-dec"><span id="pr-${e.id}-dec" class="prc pr-deduct" style="min-width:65px">${fmt(deduct)}</span></td>
+      <td class="td-inc"><span id="pr-${e.id}-net" class="prc ${net<0?'pr-net-neg':'pr-net-pos'}" style="min-width:70px">${fmt(net)}</span></td>
+    </tr>`;
+  }).join('');
+  return`
+<div class="ph">
+  <div><h2>คำนวณเงินเดือน</h2>
+    <p>${MTHS[S.payrollMonth-1]} ${S.payrollYear}${S.payrollDept!=='all'?` — แผนก${esc(S.payrollDept)}`:''} — พนักงาน ${emps.length} คน</p>
+  </div>
+  <div class="ph-actions">
+    <button class="btn btn-g" onclick="exportPayrollCSV()">⬇️ ส่งออก CSV</button>
+  </div>
+</div>
+<div class="card" style="margin-bottom:14px;padding:12px 16px">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:600;color:var(--muted)">เดือน/ปี:</span>
+    <select class="yr" onchange="setPayrollMonth(this.value)">${mopts}</select>
+    <select class="yr" onchange="setPayrollYear(this.value)">${yopts}</select>
+    <span style="font-size:12px;font-weight:600;color:var(--muted);margin-left:6px">กรอง:</span>
+    <select class="yr" style="max-width:210px" onchange="setPayrollCompany(this.value)">
+      <option value="all"${S.payrollCompany==='all'?' selected':''}>ทุกบริษัท</option>${copts}
+    </select>
+    <select class="yr" onchange="setPayrollDept(this.value)">
+      <option value="all"${S.payrollDept==='all'?' selected':''}>ทุกแผนก</option>${dopts}
+    </select>
+    ${S.payrollCompany!=='all'||S.payrollDept!=='all'?`<button class="btn btn-sm btn-g" onclick="clearPayrollFilter()">✕ ล้าง</button>`:''}
+    <span style="font-size:11px;color:#94a3b8;margin-left:4px">* OT = ฐานเดือน ÷ 30 ÷ 8 ชม.</span>
+  </div>
+</div>
+${emps.length?`<div class="tbl-card"><div class="pr-wrap">
+<table class="pr-tbl">
+<thead>
+<tr>
+  <th rowspan="2" class="th-base" style="min-width:28px">#</th>
+  <th rowspan="2" class="th-base">รหัส</th>
+  <th rowspan="2" class="th-base" style="min-width:130px">ชื่อ-นามสกุล</th>
+  <th rowspan="2" class="th-base">แผนก</th>
+  <th rowspan="2" class="th-base" style="text-align:right">ฐานเงินเดือน</th>
+  <th colspan="4" class="th-ot">OT (ชั่วโมง)</th>
+  <th colspan="6" class="th-add">รายรับเพิ่มเติม</th>
+  <th rowspan="2" class="th-inc">รายรับรวม</th>
+  <th colspan="5" class="th-de">รายการหัก</th>
+  <th rowspan="2" class="th-dec">รายจ่ายรวม</th>
+  <th rowspan="2" class="th-inc">คงเหลือ</th>
+</tr>
+<tr>
+  <th class="th-ot">1x</th><th class="th-ot">1.5x</th><th class="th-ot">3x</th><th class="th-ot">รวม OT</th>
+  <th class="th-add">เบี้ยขยัน</th><th class="th-add">เบี้ยเลี้ยง</th>
+  <th class="th-add">ค่าตำแหน่ง</th><th class="th-add">ค่าสวัสดิการ</th>
+  <th class="th-add">ค่าที่พัก</th><th class="th-add">ตกเบิก</th>
+  <th class="th-de">ประกันสังคม</th><th class="th-de">ภาษี</th>
+  <th class="th-de">กยศ</th><th class="th-de">หักลาเกิน</th><th class="th-de">ใช้หนี้บ.</th>
+</tr>
+</thead>
+<tbody>
+${rows}
+<tr class="pr-sum">
+  <td colspan="4" style="text-align:right;color:var(--pd);font-size:12px">รวม (${emps.length} คน)</td>
+  <td style="text-align:right;color:var(--pd)">${fmt(totalBase)}</td>
+  <td colspan="3"></td>
+  <td style="text-align:right;color:#1d4ed8;font-weight:700">${fmt(totalOT)}</td>
+  <td colspan="6"></td>
+  <td class="td-inc"><span id="pr-sum-inc" class="prc pr-income">${fmt(totalInc)}</span></td>
+  <td colspan="5"></td>
+  <td class="td-dec"><span id="pr-sum-dec" class="prc pr-deduct">${fmt(totalDec)}</span></td>
+  <td class="td-inc"><span id="pr-sum-net" class="prc ${totalNet<0?'pr-net-neg':'pr-net-pos'}">${fmt(totalNet)}</span></td>
+</tr>
+</tbody>
+</table>
+</div></div>`:`<div class="empty"><div class="ei">👥</div><h3>ไม่พบพนักงาน</h3><p>ลองเปลี่ยนตัวกรอง</p></div>`}`;
+}
+function setPayrollMonth(v){S.payrollMonth=parseInt(v);loadPayroll();render()}
+function setPayrollYear(v){S.payrollYear=parseInt(v);loadPayroll();render()}
+function setPayrollDept(v){S.payrollDept=v;render()}
+function setPayrollCompany(v){
+  S.payrollCompany=v;
+  if(v!=='all'){const inCo=S.depts.filter(d=>d.company===v).map(d=>d.name);if(S.payrollDept!=='all'&&!inCo.includes(S.payrollDept))S.payrollDept='all'}
+  render();
+}
+function clearPayrollFilter(){S.payrollCompany='all';S.payrollDept='all';render()}
+function exportPayrollCSV(){
+  const MTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  let emps=S.emps.filter(e=>e.status==='active');
+  if(S.payrollCompany!=='all')emps=emps.filter(e=>e.company===S.payrollCompany);
+  if(S.payrollDept!=='all')emps=emps.filter(e=>e.department===S.payrollDept);
+  emps.sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
+  const hdr=['รหัส','ชื่อ-นามสกุล','แผนก','ฐานเงินเดือน','OT 1x(ชม)','OT 1.5x(ชม)','OT 3x(ชม)','รวม OT','เบี้ยขยัน','เบี้ยเลี้ยง','ค่าตำแหน่ง','ค่าสวัสดิการ','ค่าที่พัก','ตกเบิก','รายรับรวม','ประกันสังคม','ภาษี','กยศ','หักลาเกิน','ใช้หนี้บ.','รายจ่ายรวม','คงเหลือ'];
+  const dataRows=emps.map(e=>{
+    const pd=S.payrollData[e.id]||{};
+    const base=parseFloat(e.baseSalary)||0,hRate=base/30/8;
+    const ot1=parseFloat(pd.ot1)||0,ot15=parseFloat(pd.ot15)||0,ot3=parseFloat(pd.ot3)||0;
+    const otAmt=Math.round((ot1*hRate)+(ot15*hRate*1.5)+(ot3*hRate*3));
+    const income=Math.round(base+otAmt+(parseFloat(pd.diligence)||0)+(parseFloat(pd.perDiem)||0)+(parseFloat(pd.posAllowance)||0)+(parseFloat(pd.welfare)||0)+(parseFloat(pd.housing)||0)+(parseFloat(pd.backPay)||0));
+    const deduct=Math.round((parseFloat(pd.ssn)||0)+(parseFloat(pd.tax)||0)+(parseFloat(pd.gsl)||0)+(parseFloat(pd.excessLeave)||0)+(parseFloat(pd.companyDebt)||0));
+    return[e.empId,`"${e.fullName}"`,`"${e.department||''}"`,base,ot1,ot15,ot3,otAmt,parseFloat(pd.diligence)||0,parseFloat(pd.perDiem)||0,parseFloat(pd.posAllowance)||0,parseFloat(pd.welfare)||0,parseFloat(pd.housing)||0,parseFloat(pd.backPay)||0,income,parseFloat(pd.ssn)||0,parseFloat(pd.tax)||0,parseFloat(pd.gsl)||0,parseFloat(pd.excessLeave)||0,parseFloat(pd.companyDebt)||0,deduct,income-deduct].join(',');
+  });
+  const csv='﻿'+hdr.join(',')+'\n'+dataRows.join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`payroll_${S.payrollYear}_${String(S.payrollMonth).padStart(2,'0')}.csv`;
+  a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('ส่งออก CSV สำเร็จ','ok');
+}
+
 // ── Sidebar ────────────────────────────────────────────────────
 function renderSidebar(){
   const nav=[
@@ -566,6 +804,7 @@ function renderSidebar(){
     {id:'training',ico:'📚',lbl:'ประวัติการฝึกอบรม'},
     {id:'warning',ico:'⚠️',lbl:'ประวัติใบเตือน'},
     {id:'depts',ico:'🏬',lbl:'ฐานข้อมูลแผนก'},
+    ...(isAdmin()?[{id:'payroll',ico:'💰',lbl:'คำนวณเงินเดือน'}]:[]),
     ...(isAdmin()?[{id:'users',ico:'👤',lbl:'จัดการผู้ใช้'}]:[]),
   ];
   return`<nav class="sidebar${S.menuOpen?' open':''}">
@@ -1446,6 +1685,7 @@ function render(){
   else if(S.page==='training-form')content=isAdmin()?renderTrainingForm():(S.page='training',renderTraining());
   else if(S.page==='warning')content=renderWarning();
   else if(S.page==='warning-form')content=isAdmin()?renderWarningForm():(S.page='warning',renderWarning());
+  else if(S.page==='payroll')content=isAdmin()?renderPayroll():(S.page='dashboard',renderDash());
   const delModal=S.delId?`<div class="ov" onclick="cancelDel()"><div class="modal" onclick="event.stopPropagation()">
   <h3>⚠️ ยืนยันการลบพนักงาน</h3>
   <p>ต้องการลบข้อมูลพนักงานนี้ออกจากระบบ?<br>การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
@@ -1497,6 +1737,7 @@ function goPage(p){
   if(p==='dashboard'){S.dashDept='all';S.dashYear=new Date().getFullYear();}
   if(p==='list'){S.filterSt='all';S.filterEmpType='all';S.filterCompany='all';S.filterDept='all';S.filterPosition='all';S.search='';}
   if(p==='users'&&isAdmin()&&!S.users.length)apiUserFetch().then(()=>render());
+  if(p==='payroll')loadPayroll();
   render();window.scrollTo(0,0);
 }
 function toggleMenu(){S.menuOpen=!S.menuOpen;render()}
