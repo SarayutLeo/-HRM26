@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHEMTECH Leave — ระบบจัดการวันลา</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --p:#0284c7;--pd:#0369a1;--pl:#e0f2fe;--pll:#f0f9ff;
+  --sb:#0f172a;--sb2:#1e293b;--sbt:#94a3b8;
+  --bg:#f0f9ff;--white:#fff;--bdr:#e2e8f0;
+  --txt:#0f172a;--muted:#64748b;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --shm:0 4px 12px rgba(0,0,0,.08);
+  --r:12px;--rs:8px
+}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+/* ── Layout ── */
+.layout{display:flex;min-height:100vh}
+/* ── Sidebar ── */
+.sidebar{width:240px;background:var(--sb);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:width .2s}
+.sb-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-logo .li{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.15)}.sb-logo .li img{width:203px;height:auto;display:block}
+.sb-logo h1{font-size:15px;font-weight:700;color:#fff;line-height:1.2}
+.sb-logo p{font-size:11px;color:#64748b;margin-top:2px}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-sec{padding:10px 18px 4px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.8px}
+.ni{display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;font-size:14px;font-weight:500;color:var(--sbt);border-left:3px solid transparent;transition:all .15s;white-space:nowrap;overflow:hidden}
+.ni:hover{background:rgba(255,255,255,.05);color:#fff}
+.ni.active{background:rgba(2,132,199,.18);color:#38bdf8;border-left-color:#38bdf8}
+.ni .ico{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.06)}
+.conn-status{display:flex;align-items:center;gap:8px;font-size:11px;color:#64748b}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot.on{background:#10b981}.dot.off{background:#f59e0b}
+/* ── Main ── */
+.main{margin-left:240px;flex:1;min-height:100vh;padding:28px 30px}
+/* ── Page header ── */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:24px}
+.ph h2{font-size:22px;font-weight:700}
+.ph p{font-size:13px;color:var(--muted);margin-top:2px}
+.ph-actions{display:flex;gap:8px;flex-shrink:0;flex-wrap:wrap}
+/* ── Stats ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.sc{background:var(--white);border-radius:var(--r);padding:13px 12px;box-shadow:var(--sh);display:flex;align-items:center;gap:10px}
+.sc-ic{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ic-b{background:#dbeafe}.ic-g{background:#d1fae5}.ic-r{background:#ffe4e6}.ic-y{background:#fef3c7}.ic-v{background:#ede9fe}.ic-t{background:#ccfbf1}
+.sc-info h3{font-size:20px;font-weight:700;line-height:1;margin-bottom:3px}
+.sc-info .lb{font-size:11px;color:var(--muted);font-weight:500}
+.sc-b h3{color:#1d4ed8}.sc-g h3{color:#059669}.sc-r h3{color:#dc2626}.sc-y h3{color:#d97706}.sc-v h3{color:#7c3aed}.sc-t h3{color:#0f766e}
+/* ── Card ── */
+.card{background:var(--white);border-radius:var(--r);padding:20px;box-shadow:var(--sh);margin-bottom:20px}
+/* ── Table section ── */
+.tbl-card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;margin-bottom:20px}
+.tbl-toolbar{padding:14px 18px;border-bottom:1px solid var(--bdr);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.srch{display:flex;align-items:center;gap:8px;background:var(--pll);border:1.5px solid var(--bdr);border-radius:8px;padding:7px 12px;flex:1;min-width:200px;max-width:300px}
+.srch input{border:none;background:transparent;font:14px 'Sarabun',sans-serif;color:var(--txt);outline:none;width:100%}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:5px 12px;border-radius:20px;border:1.5px solid var(--bdr);background:#fff;cursor:pointer;font:12px 'Sarabun',sans-serif;color:var(--muted);transition:all .15s;white-space:nowrap}
+.chip.active{background:var(--p);border-color:var(--p);color:#fff}
+select.yr{padding:6px 10px;border:1.5px solid var(--bdr);border-radius:7px;font:13px 'Sarabun',sans-serif;color:var(--txt);outline:none;background:#fff;cursor:pointer}
+select.yr:focus{border-color:var(--p)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--pll)}
+th{padding:10px 14px;text-align:left;font-size:12px;font-weight:700;color:var(--pd);white-space:nowrap;border-bottom:2px solid var(--pl)}
+td{padding:11px 14px;font-size:13px;color:var(--txt);border-bottom:1px solid #f8fafc}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--pll)}
+/* ── Badge ── */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.ba{background:#d1fae5;color:#065f46}
+.br{background:#ffe4e6;color:#9f1239}
+/* ── Buttons ── */
+.btn{padding:8px 18px;border-radius:var(--rs);border:none;cursor:pointer;font:600 13px 'Sarabun',sans-serif;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn-p{background:var(--p);color:#fff}.btn-p:hover{background:var(--pd)}
+.btn-g{background:#f1f5f9;color:#475569;border:none}.btn-g:hover{background:#e2e8f0}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
+.btn-ed{background:#dbeafe;color:#1d4ed8}.btn-ed:hover{background:#bfdbfe}
+.btn-del{background:#ffe4e6;color:#dc2626}.btn-del:hover{background:#fecaca}
+.btn-ok{background:#d1fae5;color:#065f46}.btn-ok:hover{background:#a7f3d0}
+/* ── Form ── */
+.form-card{background:var(--white);border-radius:var(--r);padding:24px;box-shadow:var(--sh)}
+.fsec{font-size:13px;font-weight:700;color:var(--pd);padding-bottom:10px;border-bottom:2px solid var(--pl);margin-bottom:16px;margin-top:22px}
+.fsec:first-of-type{margin-top:0}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+label.lb{font-size:12px;font-weight:600;color:#374151}
+.req{color:#ef4444}
+input[type=text],input[type=date],input[type=number],input[type=password],select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--bdr);border-radius:7px;font:14px 'Sarabun',sans-serif;color:var(--txt);background:#fafafa;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(2,132,199,.12);background:#fff}
+textarea{resize:vertical;min-height:72px}
+.form-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;padding-top:18px;border-top:1px solid var(--bdr)}
+/* ── Modal ── */
+.ov{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:var(--r);padding:24px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h3{font-size:17px;font-weight:700;margin-bottom:8px}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.7}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap}
+.info-box{background:var(--pll);border-radius:8px;padding:12px;font-size:12px;color:var(--pd);margin-bottom:16px;line-height:1.8}
+.info-box code{background:var(--pl);padding:1px 5px;border-radius:4px;font-size:11px}
+.quota-box{background:var(--pll);border-radius:8px;padding:12px 14px;font-size:13px;color:var(--txt);margin-top:4px;display:none}
+.quota-box.show{display:block}
+.quota-box b{color:var(--pd)}
+/* ── Toast ── */
+.toast{position:fixed;bottom:20px;right:20px;background:#0f172a;color:#fff;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:500;box-shadow:var(--shm);z-index:9999;animation:su .25s ease}
+.toast.ok{background:#059669}.toast.err{background:#dc2626}
+@keyframes su{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+/* ── Empty ── */
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty .ei{font-size:44px;margin-bottom:10px}
+.empty h3{font-size:15px;color:#475569;margin-bottom:5px}
+.empty p{font-size:13px}
+.ecode{font-family:monospace;font-size:12px;color:var(--p);font-weight:700;background:var(--pll);padding:2px 7px;border-radius:5px}
+/* ── Mobile Header ── */
+.mob-header{display:none;position:fixed;top:0;left:0;right:0;height:54px;background:var(--sb);z-index:150;align-items:center;padding:0 14px;gap:10px;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.ham{background:none;border:none;cursor:pointer;padding:8px;color:#94a3b8;font-size:18px;line-height:1;border-radius:6px;display:flex;align-items:center}
+.ham:active{background:rgba(255,255,255,.1)}
+.mh-logo{flex:1;font-size:14px;font-weight:700;color:#fff}
+/* ── Mobile Overlay ── */
+.mob-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:105}
+.mob-ov.open{display:block}
+/* ── Bottom Nav ── */
+.bot-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--sb);border-top:1px solid rgba(255,255,255,.07);z-index:150}
+.bn-items{display:flex}
+.bn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px 10px;cursor:pointer;color:var(--sbt);font-size:10px;font-weight:500;transition:color .15s;border:none;background:none;font-family:'Sarabun',sans-serif;-webkit-tap-highlight-color:transparent}
+.bn-item .bi{font-size:22px;line-height:1.3;display:block}
+.bn-item.active{color:#38bdf8}
+/* ── Responsive ── */
+@media(max-width:1023px){
+  .sidebar{width:58px}
+  .sb-logo{padding:14px 0;display:flex;justify-content:center;align-items:center}
+  .sb-logo .li{margin:0;padding-bottom:0;border-bottom:none}.sb-logo .li img{width:46px;height:auto;display:block}
+  .sb-logo h1,.sb-logo p,.ni span:not(.ico),.nav-sec,.conn-lbl{display:none}
+  .main{margin-left:58px;padding:22px 24px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .fg3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:767px){
+  .sidebar{width:240px;transform:translateX(-100%);transition:transform .25s ease;z-index:110}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar.open .sb-logo{padding:20px 18px;display:flex;flex-direction:column;align-items:flex-start}
+  .sidebar.open .sb-logo .li{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.15)}.sidebar.open .sb-logo .li img{width:203px;height:auto}
+  .sidebar.open .sb-logo h1,.sidebar.open .sb-logo p{display:block}
+  .sidebar.open .ni span:not(.ico),.sidebar.open .nav-sec,.sidebar.open .conn-lbl{display:block}
+  .mob-header{display:flex}
+  .bot-nav{display:block}
+  .main{margin-left:0;padding:70px 14px 76px}
+  .ph{flex-direction:column;gap:10px}
+  .ph h2{font-size:18px}
+  .ph-actions{width:100%;flex-wrap:wrap;gap:6px}
+  .stats{grid-template-columns:1fr 1fr}
+  .fg2,.fg3{grid-template-columns:1fr}
+  .modal{max-height:90vh;overflow-y:auto;padding:18px}
+  .modal-foot{flex-wrap:wrap;gap:8px}
+  .tbl-toolbar{padding:10px 12px}
+  .srch{max-width:none;min-width:0;flex:1}
+  .chips{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  select.yr{font-size:12px;padding:5px 8px}
+  .form-foot{flex-wrap:wrap;gap:8px}
+}
+@media(max-width:480px){
+  .main{padding:62px 10px 72px}
+  .sc{padding:11px 10px;gap:8px}
+  .sc-ic{width:32px;height:32px;font-size:14px}
+  .sc-info h3{font-size:17px}
+  .ph h2{font-size:16px}
+  .form-card{padding:16px}
+  .stats{grid-template-columns:1fr 1fr}
+}
+/* ── Login Page ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--sb);padding:20px}
+.login-box{background:#fff;border-radius:16px;padding:36px 40px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo .li{line-height:1;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--bdr)}.login-logo .li img{width:305px;height:auto;display:inline-block}
+.login-logo h1{font-size:22px;font-weight:700;color:var(--sb)}
+.login-logo p{font-size:13px;color:var(--muted);margin-top:4px}
+.login-err{background:#ffe4e6;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;text-align:center}
+@media(max-width:480px){.login-box{padding:28px 24px}}
+/* ── Role badge ── */
+.role-admin{background:#dbeafe;color:#1d4ed8;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;display:inline-block}
+.role-user{background:#f1f5f9;color:#475569;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;display:inline-block}
+/* ── Sidebar user info ── */
+.sb-user{padding:10px 14px;background:rgba(255,255,255,.06);border-radius:8px;margin:6px 10px 2px}
+.sb-user .un{font-size:13px;font-weight:600;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-user .ur{margin-top:3px}
+/* ── Leave bar ── */
+.lv-bar-wrap{background:#f1f5f9;border-radius:6px;height:7px;overflow:hidden;width:100%}
+.lv-bar{height:100%;border-radius:6px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ── Constants ──────────────────────────────────────────────────
+// ระบบนี้เป็นระบบแยกต่างหากจาก CHEMTECH HRM แต่ใช้ Google Sheet ฐานข้อมูลเดียวกัน
+// (เพิ่ม sheet "การลา" และ action listLeaves/createLeave/... ใน code.gs ตัวเดิม)
+const APP_CONFIG={apiUrl:'https://script.google.com/macros/s/AKfycbwL9ZI5pZ9Xq8nxo_3BN7WHbwOA3oByxyos5mAXSn2PE2euVbYLO552k_6ZKTfoYtAs/exec'};
+const COMPANIES=['บริษัท เคมเทค อินโนเวชั่น จำกัด','บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด'];
+const LEAVE_TYPES=[
+  {id:'personal',lbl:'ลากิจ',quotaField:'personalLeave',color:'#f59e0b',reasonRequired:true},
+  {id:'annual',lbl:'ลาพักร้อน',quotaField:'annualLeave',color:'#0ea5e9'},
+  {id:'sickNoDoc',lbl:'ลาป่วย (ไม่มีใบรับรองแพทย์)',quotaField:'sickLeaveNoDoc',color:'#f97316'},
+  {id:'sickWithDoc',lbl:'ลาป่วย (มีใบรับรองแพทย์)',quotaField:'sickLeaveWithDoc',color:'#ef4444',requireDoc:true},
+  {id:'other',lbl:'ลาอื่นๆ',quotaField:null,color:'#64748b',reasonRequired:true},
+];
+const STATUS_INFO={
+  pending:{lbl:'รออนุมัติ',bg:'#fef3c7',fg:'#92400e',ic:'⏳'},
+  approved:{lbl:'อนุมัติแล้ว',bg:'#d1fae5',fg:'#065f46',ic:'✅'},
+  rejected:{lbl:'ไม่อนุมัติ',bg:'#ffe4e6',fg:'#9f1239',ic:'❌'},
+};
+function leaveTypeInfo(id){return LEAVE_TYPES.find(t=>t.id===id)||{lbl:id||'-',color:'#64748b'}}
+function statusInfo(s){return STATUS_INFO[s]||STATUS_INFO.pending}
+
+// ── State ──────────────────────────────────────────────────────
+const S={
+  page:'dashboard',
+  apiUrl:localStorage.getItem('leave_api')||APP_CONFIG.apiUrl,
+  connected:false,
+  loading:false,
+  showSetup:false,
+  menuOpen:false,
+  user:(function(){try{return JSON.parse(localStorage.getItem('leave_user')||'null')}catch{return null}})(),
+  loginErr:'',
+  loginLoading:false,
+  emps:[],
+  depts:[],
+  leaves:[],
+  leaveEditId:null,
+  leaveDelId:null,
+  leaveSearch:'',
+  filterStatus:'all',
+  filterType:'all',
+  filterYear:new Date().getFullYear(),
+  summaryYear:new Date().getFullYear(),
+  summarySearch:'',
+  rejectId:null,
+};
+
+// ── API (ใช้ Google Apps Script/Sheet เดียวกับ HRM) ─────────────
+async function apiEmpFetch(){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl+'?action=list',{redirect:'follow'});
+    const d=JSON.parse(await r.text());
+    if(d.success){S.emps=d.data;S.connected=true;return true}
+    S.connected=false;return false;
+  }catch{S.connected=false;return false}
+}
+async function apiDeptFetch(){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl+'?action=listDepts',{redirect:'follow'});
+    const d=JSON.parse(await r.text());
+    if(d.success){S.depts=d.data;return true}
+    return false;
+  }catch{return false}
+}
+async function apiLeaveFetch(){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl+'?action=listLeaves',{redirect:'follow'});
+    const d=JSON.parse(await r.text());
+    if(d.success){S.leaves=d.data;return true}
+    return false;
+  }catch{return false}
+}
+async function apiLeavePost(body){
+  if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อฐานข้อมูล'};
+  try{
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+    return JSON.parse(await r.text());
+  }catch{return{success:false,error:'เชื่อมต่อไม่ได้ กรุณาลองใหม่'}}
+}
+async function apiLogin(username,password){
+  if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อฐานข้อมูล กรุณาตั้งค่า API URL ก่อน'};
+  try{
+    const url=S.apiUrl+'?action=login&username='+encodeURIComponent(username)+'&password='+encodeURIComponent(password);
+    const r=await fetch(url,{redirect:'follow'});
+    return JSON.parse(await r.text());
+  }catch{return{success:false,error:'เชื่อมต่อไม่ได้ กรุณาลองใหม่'}}
+}
+function isAdmin(){return S.user&&S.user.role==='admin'}
+
+// ── Helpers ────────────────────────────────────────────────────
+function uid(){return'L'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase()}
+function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function pdate(s){
+  if(!s)return null;
+  const str=String(s).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(str)){const d=new Date(str.substring(0,10)+'T00:00:00');return isNaN(d)?null:d}
+  const d=new Date(str);return isNaN(d)?null:d;
+}
+function fdate(d){
+  if(!d)return'-';
+  const dt=pdate(d);if(!dt)return String(d);
+  return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();
+}
+function toInputDate(d){
+  if(!d)return'';
+  const dt=pdate(d);if(!dt)return'';
+  return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+}
+function calcDays(start,end){
+  const s=pdate(start),e=pdate(end);
+  if(!s||!e||e<s)return 0;
+  return Math.round((e-s)/86400000)+1;
+}
+function toast(msg,type=''){
+  document.querySelectorAll('.toast').forEach(e=>e.remove());
+  const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:'');el.textContent=msg;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),3000)
+}
+function usedDays(empId,typeId,year){
+  return S.leaves.filter(l=>l.employeeId===empId&&l.leaveType===typeId&&l.status==='approved'&&(()=>{const d=pdate(l.startDate);return d&&d.getFullYear()===year})())
+    .reduce((sum,l)=>sum+(parseFloat(l.days)||0),0);
+}
+
+// ── Login ──────────────────────────────────────────────────────
+function renderLogin(){
+  return`<div class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo"><div class="li"><img src="Logo-login.png" alt="CHEMTECH"></div><h1>ระบบจัดการวันลา</h1><p>CHEMTECH Leave Management</p><p style="font-size:11px;color:#94a3b8;margin-top:6px">แยกจากระบบ HRM แต่ใช้ฐานข้อมูลเดียวกัน</p></div>
+    ${S.loginErr?`<div class="login-err">❌ ${esc(S.loginErr)}</div>`:''}
+    <form onsubmit="doLogin(event)">
+      <div class="fg" style="margin-bottom:14px">
+        <label class="lb">ชื่อผู้ใช้ (Username)</label>
+        <input type="text" id="ln-user" placeholder="กรอก Username" autocomplete="username" required>
+      </div>
+      <div class="fg" style="margin-bottom:20px">
+        <label class="lb">รหัสผ่าน (Password)</label>
+        <input type="password" id="ln-pass" placeholder="กรอก Password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-p" style="width:100%;justify-content:center;padding:11px" ${S.loginLoading?'disabled':''}>
+        ${S.loginLoading?'⏳ กำลังเข้าสู่ระบบ...':'🔐 เข้าสู่ระบบ'}
+      </button>
+    </form>
+    <p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:18px">ใช้ Username/Password เดียวกับระบบ CHEMTECH HRM</p>
+  </div>
+</div>`;
+}
+async function doLogin(ev){
+  ev.preventDefault();
+  const username=document.getElementById('ln-user').value.trim();
+  const password=document.getElementById('ln-pass').value;
+  if(!username||!password){S.loginErr='กรุณากรอก Username และ Password';render();return}
+  S.loginErr='';S.loginLoading=true;render();
+  const res=await apiLogin(username,password);
+  S.loginLoading=false;
+  if(res.success){
+    S.user=res.user;
+    localStorage.setItem('leave_user',JSON.stringify(S.user));
+    S.loginErr='';
+    render();
+    S.loading=true;render();
+    await Promise.all([apiEmpFetch(),apiLeaveFetch(),apiDeptFetch()]);
+    S.loading=false;render();
+  }else{
+    S.loginErr=res.error||'เข้าสู่ระบบไม่สำเร็จ';
+    render();
+  }
+}
+function logout(){
+  S.user=null;
+  localStorage.removeItem('leave_user');
+  S.page='dashboard';S.menuOpen=false;
+  render();
+}
+
+// ── Setup Modal ────────────────────────────────────────────────
+function renderSetup(){
+  if(!S.showSetup)return'';
+  return`<div class="ov" onclick="closeSetup()"><div class="modal" onclick="event.stopPropagation()" style="max-width:520px">
+  <h3>⚙️ เชื่อมต่อฐานข้อมูล</h3>
+  <p>วาง URL ของ Google Apps Script Web App เดียวกับที่ใช้ในระบบ CHEMTECH HRM (ใช้ Google Sheet ฐานข้อมูลเดียวกัน)</p>
+  <div class="fg" style="margin-bottom:4px"><label class="lb">Apps Script Web App URL</label>
+    <input type="text" id="api-inp" value="${esc(S.apiUrl)}" placeholder="https://script.google.com/macros/s/..."></div>
+  <div class="modal-foot">
+    <button class="btn btn-g" onclick="closeSetup()">ยกเลิก</button>
+    <button class="btn btn-p" onclick="saveApi()">บันทึก &amp; เชื่อมต่อ</button>
+  </div>
+</div></div>`;
+}
+function openSetup(){S.showSetup=true;S.menuOpen=false;render()}
+function closeSetup(){S.showSetup=false;render()}
+async function saveApi(){
+  const url=document.getElementById('api-inp').value.trim();
+  S.apiUrl=url;localStorage.setItem('leave_api',url);
+  S.showSetup=false;S.loading=true;render();
+  await Promise.all([apiEmpFetch(),apiLeaveFetch(),apiDeptFetch()]);
+  S.loading=false;render();
+  toast(S.connected?'เชื่อมต่อสำเร็จ':'บันทึก URL แล้ว','ok');
+}
+
+// ── Sidebar ────────────────────────────────────────────────────
+function renderSidebar(){
+  const nav=[
+    {id:'dashboard',ico:'📊',lbl:'ภาพรวม'},
+    {id:'list',ico:'📋',lbl:'คำขอลาทั้งหมด'},
+    ...(isAdmin()?[{id:'form',ico:'📝',lbl:'ยื่นคำขอลา'}]:[]),
+    {id:'summary',ico:'📅',lbl:'สรุปวันลาพนักงาน'},
+  ];
+  return`<aside class="sidebar${S.menuOpen?' open':''}">
+    <div class="sb-logo"><div class="li"><img src="Logo-login.png" alt="CHEMTECH"></div><h1>ระบบจัดการวันลา</h1><p>Leave Management</p></div>
+    ${S.user?`<div class="sb-user"><div class="un">${esc(S.user.name||S.user.username)}</div><div class="ur"><span class="${isAdmin()?'role-admin':'role-user'}">${isAdmin()?'Admin':'User'}</span></div></div>`:''}
+    <nav class="sb-nav">
+      <div class="nav-sec">เมนูหลัก</div>
+      ${nav.map(n=>`<div class="ni${S.page===n.id?' active':''}" onclick="goPage('${n.id}')"><span class="ico">${n.ico}</span><span>${n.lbl}</span></div>`).join('')}
+      <div class="ni" onclick="openSetup()"><span class="ico">⚙️</span><span>ตั้งค่าฐานข้อมูล</span></div>
+      <div class="ni" onclick="logout()" style="color:#f87171"><span class="ico">🚪</span><span>ออกจากระบบ</span></div>
+    </nav>
+    <div class="sb-foot">
+      <div class="conn-status"><span class="dot ${S.apiUrl&&S.connected?'on':'off'}"></span><span class="conn-lbl">${S.apiUrl&&S.connected?'เชื่อมต่อฐานข้อมูลแล้ว':'ยังไม่ได้เชื่อมต่อ'}</span></div>
+    </div>
+  </aside>`;
+}
+
+// ── Dashboard ──────────────────────────────────────────────────
+function renderDash(){
+  const pending=S.leaves.filter(l=>l.status==='pending');
+  const approved=S.leaves.filter(l=>l.status==='approved');
+  const thisMonth=new Date().getMonth(),thisYear=new Date().getFullYear();
+  const approvedThisMonth=approved.filter(l=>{const d=pdate(l.startDate);return d&&d.getFullYear()===thisYear&&d.getMonth()===thisMonth});
+  const totalDaysThisYear=approved.filter(l=>{const d=pdate(l.startDate);return d&&d.getFullYear()===thisYear}).reduce((s,l)=>s+(parseFloat(l.days)||0),0);
+  const pendingList=[...pending].sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+  return`
+<div class="ph">
+  <div><h2>📊 ภาพรวมระบบลา</h2><p>สรุปคำขอลาของพนักงานทั้งหมด</p></div>
+  <div class="ph-actions"><button class="btn btn-g" onclick="Promise.all([apiEmpFetch(),apiLeaveFetch(),apiDeptFetch()]).then(()=>render())">↻ รีเฟรช</button></div>
+</div>
+<div class="stats">
+  <div class="sc"><div class="sc-ic ic-b">👥</div><div class="sc-info"><h3 class="sc-b">${S.emps.filter(e=>e.status==='active').length}</h3><div class="lb">พนักงานทั้งหมด</div></div></div>
+  <div class="sc"><div class="sc-ic ic-y">⏳</div><div class="sc-info"><h3 class="sc-y">${pending.length}</h3><div class="lb">รออนุมัติ</div></div></div>
+  <div class="sc"><div class="sc-ic ic-g">✅</div><div class="sc-info"><h3 class="sc-g">${approvedThisMonth.length}</h3><div class="lb">อนุมัติแล้ว (เดือนนี้)</div></div></div>
+  <div class="sc"><div class="sc-ic ic-v">📅</div><div class="sc-info"><h3 class="sc-v">${totalDaysThisYear}</h3><div class="lb">วันลารวม (ปี ${thisYear+543})</div></div></div>
+</div>
+<div class="tbl-card">
+  <div class="tbl-toolbar"><strong style="font-size:14px">⏳ คำขอลาที่รออนุมัติ (${pendingList.length})</strong></div>
+  <div class="tbl-wrap">
+  ${pendingList.length?`<table>
+    <thead><tr><th>พนักงาน</th><th>ประเภท</th><th>วันที่ลา</th><th>จำนวนวัน</th><th>เหตุผล</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <tbody>${pendingList.map(l=>{
+      const emp=S.emps.find(e=>e.id===l.employeeId);
+      const t=leaveTypeInfo(l.leaveType);
+      return`<tr>
+        <td>${emp?`<strong>${esc(emp.fullName)}</strong><br><span style="font-size:11px;color:#64748b">${esc(emp.empId)}</span>`:esc(l.employeeId||'-')}</td>
+        <td><span style="background:${t.color}22;color:${t.color};padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;display:inline-block">${esc(t.lbl)}</span></td>
+        <td style="white-space:nowrap;font-size:13px">${fdate(l.startDate)} - ${fdate(l.endDate)}</td>
+        <td>${esc(l.days)} วัน</td>
+        <td style="font-size:12px;max-width:220px;white-space:normal">${esc(l.reason||'-')}</td>
+        ${isAdmin()?`<td style="white-space:nowrap">
+          <button class="btn btn-sm btn-ok" onclick="approveLeave('${l.id}')">✅ อนุมัติ</button>
+          <button class="btn btn-sm btn-del" onclick="openReject('${l.id}')" style="margin-left:4px">❌ ปฏิเสธ</button>
+        </td>`:''}
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`:`<div class="empty"><div class="ei">🎉</div><h3>ไม่มีคำขอที่รออนุมัติ</h3></div>`}
+  </div>
+</div>`;
+}
+
+// ── Leave List ─────────────────────────────────────────────────
+function renderList(){
+  const q=S.leaveSearch.toLowerCase();
+  let list=[...S.leaves];
+  if(S.filterStatus!=='all')list=list.filter(l=>l.status===S.filterStatus);
+  if(S.filterType!=='all')list=list.filter(l=>l.leaveType===S.filterType);
+  list=list.filter(l=>{const d=pdate(l.startDate);return !d||d.getFullYear()===S.filterYear});
+  if(q)list=list.filter(l=>{
+    const emp=S.emps.find(e=>e.id===l.employeeId);
+    return[l.reason,emp&&emp.fullName,emp&&emp.empId].some(v=>(v||'').toLowerCase().includes(q));
+  });
+  list.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const years=[...new Set(S.leaves.map(l=>{const d=pdate(l.startDate);return d?d.getFullYear():null}).filter(Boolean))];
+  if(!years.includes(S.filterYear))years.push(S.filterYear);
+  years.sort((a,b)=>b-a);
+  return`
+<div class="ph">
+  <div><h2>📋 คำขอลาทั้งหมด</h2><p>รายการคำขอลาของพนักงาน (${list.length} รายการ)</p></div>
+  <div class="ph-actions">
+    <button class="btn btn-g" onclick="apiLeaveFetch().then(()=>render())">↻ รีเฟรช</button>
+    ${isAdmin()?`<button class="btn btn-p" onclick="goLeaveForm(null)">+ ยื่นคำขอลา</button>`:''}
+  </div>
+</div>
+<div class="tbl-card">
+  <div class="tbl-toolbar">
+    <div class="srch"><span style="color:#94a3b8;font-size:14px">🔍</span>
+      <input type="text" placeholder="ค้นหาชื่อพนักงาน, เหตุผล..." value="${esc(S.leaveSearch)}" oninput="S.leaveSearch=this.value;render();this.focus()">
+    </div>
+    <select class="yr" onchange="S.filterYear=parseInt(this.value);render()">
+      ${years.map(y=>`<option value="${y}" ${S.filterYear===y?'selected':''}>ปี ${y+543}</option>`).join('')}
+    </select>
+    <select class="yr" onchange="S.filterType=this.value;render()">
+      <option value="all" ${S.filterType==='all'?'selected':''}>ทุกประเภท</option>
+      ${LEAVE_TYPES.map(t=>`<option value="${t.id}" ${S.filterType===t.id?'selected':''}>${t.lbl}</option>`).join('')}
+    </select>
+    <div class="chips">
+      <div class="chip ${S.filterStatus==='all'?'active':''}" onclick="S.filterStatus='all';render()">ทั้งหมด</div>
+      <div class="chip ${S.filterStatus==='pending'?'active':''}" onclick="S.filterStatus='pending';render()">รออนุมัติ</div>
+      <div class="chip ${S.filterStatus==='approved'?'active':''}" onclick="S.filterStatus='approved';render()">อนุมัติแล้ว</div>
+      <div class="chip ${S.filterStatus==='rejected'?'active':''}" onclick="S.filterStatus='rejected';render()">ไม่อนุมัติ</div>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+  ${list.length?`<table>
+    <thead><tr><th>พนักงาน</th><th>ประเภท</th><th>วันที่ลา</th><th>จำนวนวัน</th><th>เหตุผล</th><th>วันที่ยื่นคำขอ</th><th>สถานะ</th><th>ผู้อนุมัติ</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <tbody>${list.map(l=>{
+      const emp=S.emps.find(e=>e.id===l.employeeId);
+      const t=leaveTypeInfo(l.leaveType);
+      const st=statusInfo(l.status);
+      return`<tr>
+        <td>${emp?`<strong>${esc(emp.fullName)}</strong><br><span style="font-size:11px;color:#64748b">${esc(emp.empId)}</span>`:esc(l.employeeId||'-')}</td>
+        <td><span style="background:${t.color}22;color:${t.color};padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;display:inline-block">${esc(t.lbl)}</span></td>
+        <td style="white-space:nowrap;font-size:13px">${fdate(l.startDate)} - ${fdate(l.endDate)}</td>
+        <td>${esc(l.days)} วัน</td>
+        <td style="font-size:12px;max-width:200px;white-space:normal">${esc(l.reason||'-')}${l.attachmentUrl?`<br><a href="${esc(l.attachmentUrl)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--p)">📎 ดูเอกสารแนบ</a>`:''}</td>
+        <td style="white-space:nowrap;font-size:13px">${fdate(l.createdAt)}</td>
+        <td><span style="background:${st.bg};color:${st.fg};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap">${st.ic} ${st.lbl}</span>${l.status==='rejected'&&l.rejectReason?`<br><span style="font-size:11px;color:#9f1239">${esc(l.rejectReason)}</span>`:''}</td>
+        <td style="font-size:12px">${esc(l.approver||'-')}</td>
+        ${isAdmin()?`<td style="white-space:nowrap">
+          ${l.status==='pending'?`<button class="btn btn-sm btn-ok" onclick="approveLeave('${l.id}')">✅</button><button class="btn btn-sm btn-del" onclick="openReject('${l.id}')" style="margin-left:4px">❌</button>`:''}
+          <button class="btn btn-sm btn-ed" onclick="goLeaveForm('${l.id}')" style="margin-left:4px">✏️</button>
+          <button class="btn btn-sm btn-del" onclick="confirmLeaveDel('${l.id}')" style="margin-left:4px">🗑️</button>
+        </td>`:''}
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`:`<div class="empty"><div class="ei">📋</div><h3>ยังไม่มีข้อมูล</h3><p>ยังไม่มีคำขอลาในเงื่อนไขที่เลือก</p></div>`}
+  </div>
+</div>`;
+}
+
+// ── Leave Form ─────────────────────────────────────────────────
+function renderLeaveForm(){
+  if(!isAdmin()){S.page='list';return renderList()}
+  const isEdit=!!S.leaveEditId;
+  const l=isEdit?S.leaves.find(x=>x.id===S.leaveEditId)||{}:{};
+  const activeEmpsAll=[...S.emps].filter(e=>e.status==='active').sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
+  const preCompany=isEdit?((activeEmpsAll.find(e=>e.id===l.employeeId)||{}).company||'all'):'all';
+  const preDept=isEdit?((activeEmpsAll.find(e=>e.id===l.employeeId)||{}).department||'all'):'all';
+  const deptOptsAll=[...S.depts].filter(d=>preCompany==='all'||d.company===preCompany).sort((a,b)=>(a.name||'').localeCompare(b.name||'','th'));
+  const activeEmps=activeEmpsAll
+    .filter(e=>preCompany==='all'||e.company===preCompany)
+    .filter(e=>preDept==='all'||e.department===preDept);
+  const empOpts=activeEmps.map(e=>`<option value="${e.id}" ${l.employeeId===e.id?'selected':''}>${esc(e.fullName)} (${esc(e.empId)}) — ${esc(e.department||'')}</option>`).join('');
+  const typeOpts=LEAVE_TYPES.map(t=>`<option value="${t.id}" ${l.leaveType===t.id?'selected':''}>${t.lbl}</option>`).join('');
+  return`
+<div class="ph">
+  <div><h2>${isEdit?'✏️ แก้ไขคำขอลา':'📝 ยื่นคำขอลา'}</h2><p>${isEdit?'แก้ไขรายละเอียดคำขอลา':'กรอกข้อมูลคำขอลาให้ครบถ้วน'}</p></div>
+  <button class="btn btn-g" onclick="goPage('list')">← กลับ</button>
+</div>
+<form class="form-card" onsubmit="submitLeaveForm(event)">
+  <div class="fsec">ข้อมูลผู้ลา</div>
+  <div class="fg2">
+    <div class="fg"><label class="lb">กรองตามบริษัท</label>
+      <select id="lv-filter-company" onchange="updateDeptFilterOptions()">
+        <option value="all" ${preCompany==='all'?'selected':''}>ทุกบริษัท</option>
+        ${COMPANIES.map(c=>`<option value="${esc(c)}" ${preCompany===c?'selected':''}>${esc(c)}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label class="lb">กรองตามแผนก</label>
+      <select id="lv-filter-dept" onchange="updateEmpOptions()">
+        <option value="all" ${preDept==='all'?'selected':''}>ทุกแผนก</option>
+        ${deptOptsAll.map(d=>`<option value="${esc(d.name)}" ${preDept===d.name?'selected':''}>${esc(d.name)}</option>`).join('')}
+      </select></div>
+  </div>
+  <div class="fg2" style="margin-top:14px">
+    <div class="fg"><label class="lb">พนักงาน <span class="req">*</span></label>
+      <select name="employeeId" id="lv-emp" required onchange="updateQuotaBox()">
+        <option value="">-- เลือกพนักงาน --</option>
+        ${empOpts}
+      </select></div>
+    <div class="fg"><label class="lb">ประเภทการลา <span class="req">*</span></label>
+      <select name="leaveType" id="lv-type" required onchange="updateQuotaBox();updateReasonRequirement();updateDocRequirement()">
+        <option value="">-- เลือกประเภท --</option>
+        ${typeOpts}
+      </select></div>
+  </div>
+  <div class="fg" style="margin-top:14px"><label class="lb">วันที่ยื่นคำขอ</label>
+    <div style="padding:9px 12px;background:#f1f5f9;border-radius:7px;font-size:14px;color:var(--muted)">${fdate(isEdit?(l.createdAt||new Date().toISOString()):new Date().toISOString())} (วันที่ปัจจุบัน แก้ไขไม่ได้)</div></div>
+  <div class="quota-box" id="lv-quota"></div>
+
+  <div class="fsec">ช่วงเวลาที่ลา</div>
+  <div class="fg2">
+    <div class="fg"><label class="lb">วันที่เริ่มลา <span class="req">*</span></label>
+      <input type="date" name="startDate" id="lv-start" value="${esc(toInputDate(l.startDate))}" required onchange="updateDaysBox()"></div>
+    <div class="fg"><label class="lb">วันที่สิ้นสุด <span class="req">*</span></label>
+      <input type="date" name="endDate" id="lv-end" value="${esc(toInputDate(l.endDate))}" required onchange="updateDaysBox()"></div>
+  </div>
+  <div class="fg" style="margin-top:14px"><label class="lb">จำนวนวัน</label>
+    <div id="lv-days" style="font-size:14px;font-weight:700;color:var(--pd)">${l.days?l.days+' วัน':'-'}</div></div>
+
+  <div class="fsec">เหตุผล<span class="req" id="lv-reason-req" style="display:none">&nbsp;*</span></div>
+  <div class="fg"><textarea name="reason" id="lv-reason" rows="3" placeholder="ระบุเหตุผลการลา...">${esc(l.reason||'')}</textarea></div>
+
+  <div class="fg" id="lv-doc-wrap" style="display:none;margin-top:14px">
+    <label class="lb">แนบรูปถ่ายใบรับรองแพทย์ <span class="req">*</span></label>
+    ${isEdit&&l.attachmentUrl?`<div style="margin-bottom:6px;font-size:12px"><a href="${esc(l.attachmentUrl)}" target="_blank" rel="noopener" style="color:var(--p)">📎 ดูเอกสารที่แนบไว้ปัจจุบัน</a></div>`:''}
+    <input type="file" id="lv-doc-file" accept="image/*" capture="environment">
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">${isEdit&&l.attachmentUrl?'หากไม่เลือกไฟล์ใหม่ ระบบจะใช้เอกสารเดิม':'ถ่ายรูปหรือเลือกไฟล์รูปใบรับรองแพทย์'}</div>
+  </div>
+
+  <div class="form-foot" style="${isEdit?'justify-content:space-between':'justify-content:flex-end'}">
+    ${isEdit?`<button type="button" class="btn btn-del" onclick="confirmLeaveDel('${l.id}')">🗑️ ลบคำขอ</button>`:''}
+    <div style="display:flex;gap:10px">
+      <button type="button" class="btn btn-g" onclick="goPage('list')">ยกเลิก</button>
+      <button type="submit" class="btn btn-p">${isEdit?'💾 บันทึกการแก้ไข':'✅ ยื่นคำขอลา'}</button>
+    </div>
+  </div>
+</form>`;
+}
+function updateDaysBox(){
+  const s=document.getElementById('lv-start').value,e=document.getElementById('lv-end').value;
+  const d=calcDays(s,e);
+  const box=document.getElementById('lv-days');
+  if(box)box.textContent=d>0?d+' วัน':'-';
+}
+function updateQuotaBox(){
+  const empId=document.getElementById('lv-emp').value;
+  const typeId=document.getElementById('lv-type').value;
+  const box=document.getElementById('lv-quota');
+  if(!box)return;
+  if(!empId||!typeId){box.className='quota-box';box.innerHTML='';return}
+  const emp=S.emps.find(e=>e.id===empId);
+  const t=leaveTypeInfo(typeId);
+  if(!emp||!t.quotaField){box.className='quota-box show';box.innerHTML='ประเภทการลานี้ไม่มีโควตากำหนดไว้ (บันทึกไว้เพื่ออ้างอิงเท่านั้น)';return}
+  const year=new Date().getFullYear();
+  const quota=parseFloat(emp[t.quotaField])||0;
+  const used=usedDays(empId,typeId,year);
+  const remain=quota-used;
+  box.className='quota-box show';
+  box.innerHTML=`สิทธิ ${esc(t.lbl)} ปี ${year+543}: <b>${quota}</b> วัน &nbsp;|&nbsp; ใช้ไปแล้ว (อนุมัติแล้ว): <b>${used}</b> วัน &nbsp;|&nbsp; คงเหลือ: <b style="color:${remain<0?'#dc2626':'#059669'}">${remain}</b> วัน`;
+}
+function updateDeptFilterOptions(){
+  const companyVal=document.getElementById('lv-filter-company').value;
+  const deptSel=document.getElementById('lv-filter-dept');
+  if(!deptSel)return;
+  const curVal=deptSel.value;
+  const depts=[...S.depts].filter(d=>companyVal==='all'||d.company===companyVal).sort((a,b)=>(a.name||'').localeCompare(b.name||'','th'));
+  deptSel.innerHTML='<option value="all">ทุกแผนก</option>'+depts.map(d=>`<option value="${esc(d.name)}">${esc(d.name)}</option>`).join('');
+  deptSel.value=depts.some(d=>d.name===curVal)?curVal:'all';
+  updateEmpOptions();
+}
+function updateEmpOptions(){
+  const companyVal=document.getElementById('lv-filter-company').value;
+  const deptVal=document.getElementById('lv-filter-dept').value;
+  const empSel=document.getElementById('lv-emp');
+  if(!empSel)return;
+  const curVal=empSel.value;
+  const filtered=[...S.emps].filter(e=>e.status==='active')
+    .filter(e=>companyVal==='all'||e.company===companyVal)
+    .filter(e=>deptVal==='all'||e.department===deptVal)
+    .sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
+  empSel.innerHTML='<option value="">-- เลือกพนักงาน --</option>'+filtered.map(e=>`<option value="${esc(e.id)}">${esc(e.fullName)} (${esc(e.empId)}) — ${esc(e.department||'')}</option>`).join('');
+  empSel.value=filtered.some(e=>e.id===curVal)?curVal:'';
+  updateQuotaBox();
+}
+function updateReasonRequirement(){
+  const t=leaveTypeInfo(document.getElementById('lv-type').value);
+  const reasonEl=document.getElementById('lv-reason');
+  const reqSpan=document.getElementById('lv-reason-req');
+  if(reasonEl)reasonEl.required=!!t.reasonRequired;
+  if(reqSpan)reqSpan.style.display=t.reasonRequired?'inline':'none';
+}
+function updateDocRequirement(){
+  const t=leaveTypeInfo(document.getElementById('lv-type').value);
+  const wrap=document.getElementById('lv-doc-wrap');
+  const file=document.getElementById('lv-doc-file');
+  const editRec=S.leaveEditId?S.leaves.find(x=>x.id===S.leaveEditId):null;
+  const hasAttachment=!!(editRec&&editRec.attachmentUrl);
+  if(wrap)wrap.style.display=t.requireDoc?'block':'none';
+  if(file)file.required=!!(t.requireDoc&&!hasAttachment);
+}
+function readFileAsBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── Summary (สรุปวันลาต่อพนักงาน) ────────────────────────────────
+function renderSummary(){
+  const q=S.summarySearch.toLowerCase();
+  let list=[...S.emps].filter(e=>e.status==='active');
+  if(q)list=list.filter(e=>[e.fullName,e.empId,e.department].some(v=>(v||'').toLowerCase().includes(q)));
+  list.sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
+  const year=S.summaryYear;
+  const quotaTypes=LEAVE_TYPES.filter(t=>t.quotaField);
+  return`
+<div class="ph">
+  <div><h2>📅 สรุปวันลาพนักงาน</h2><p>เปรียบเทียบสิทธิ/ใช้ไป/คงเหลือ ต่อพนักงาน (นับเฉพาะคำขอที่อนุมัติแล้ว)</p></div>
+  <div class="ph-actions">
+    <select class="yr" onchange="S.summaryYear=parseInt(this.value);render()">
+      ${[year-1,year,year+1].map(y=>`<option value="${y}" ${y===year?'selected':''}>ปี ${y+543}</option>`).join('')}
+    </select>
+    <button class="btn btn-g" onclick="exportSummaryCSV()">⬇️ Export CSV</button>
+  </div>
+</div>
+<div class="tbl-card">
+  <div class="tbl-toolbar">
+    <div class="srch"><span style="color:#94a3b8;font-size:14px">🔍</span>
+      <input type="text" placeholder="ค้นหาชื่อพนักงาน, รหัส, แผนก..." value="${esc(S.summarySearch)}" oninput="S.summarySearch=this.value;render();this.focus()">
+    </div>
+  </div>
+  <div class="tbl-wrap">
+  ${list.length?`<table>
+    <thead><tr><th>พนักงาน</th><th>แผนก</th>${quotaTypes.map(t=>`<th>${t.lbl}</th>`).join('')}</tr></thead>
+    <tbody>${list.map(e=>{
+      return`<tr>
+        <td><strong>${esc(e.fullName)}</strong><br><span style="font-size:11px;color:#64748b">${esc(e.empId)}</span></td>
+        <td style="font-size:12px">${esc(e.department||'-')}</td>
+        ${quotaTypes.map(t=>{
+          const quota=parseFloat(e[t.quotaField])||0;
+          const used=usedDays(e.id,t.id,year);
+          const remain=quota-used;
+          const pct=quota>0?Math.min(100,Math.round(used/quota*100)):0;
+          return`<td style="min-width:130px">
+            <div style="font-size:12px;margin-bottom:4px">${used}/${quota} วัน <span style="color:${remain<0?'#dc2626':'#64748b'}">(เหลือ ${remain})</span></div>
+            <div class="lv-bar-wrap"><div class="lv-bar" style="width:${pct}%;background:${remain<0?'#dc2626':t.color}"></div></div>
+          </td>`;
+        }).join('')}
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`:`<div class="empty"><div class="ei">👥</div><h3>ไม่พบพนักงาน</h3></div>`}
+  </div>
+</div>`;
+}
+function exportSummaryCSV(){
+  const year=S.summaryYear;
+  const quotaTypes=LEAVE_TYPES.filter(t=>t.quotaField);
+  const list=[...S.emps].filter(e=>e.status==='active').sort((a,b)=>(a.empId||'').localeCompare(b.empId||'',undefined,{numeric:true}));
+  const header=['รหัสพนักงาน','ชื่อ-นามสกุล','แผนก',...quotaTypes.flatMap(t=>[t.lbl+' (สิทธิ)',t.lbl+' (ใช้ไป)',t.lbl+' (คงเหลือ)'])];
+  const rows=list.map(e=>{
+    const cells=[e.empId,e.fullName,e.department||''];
+    quotaTypes.forEach(t=>{
+      const quota=parseFloat(e[t.quotaField])||0;
+      const used=usedDays(e.id,t.id,year);
+      cells.push(quota,used,quota-used);
+    });
+    return cells;
+  });
+  const csv='﻿'+[header,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`สรุปวันลา_ปี${year+543}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  toast('Export CSV สำเร็จ','ok');
+}
+
+// ── Leave handlers ─────────────────────────────────────────────
+function goLeaveForm(id){if(!isAdmin())return;S.leaveEditId=id;S.page='form';render();window.scrollTo(0,0);setTimeout(()=>{updateQuotaBox();updateReasonRequirement();updateDocRequirement()},0)}
+function confirmLeaveDel(id){S.leaveDelId=id;render()}
+function cancelLeaveDel(){S.leaveDelId=null;render()}
+async function doLeaveDel(){
+  const id=S.leaveDelId;S.leaveDelId=null;
+  const ok=await apiLeavePost({action:'deleteLeave',id});
+  if(ok.success){S.leaves=S.leaves.filter(l=>l.id!==id);toast('ลบคำขอลาสำเร็จ','ok')}
+  else toast(ok.error||'ลบไม่สำเร็จ','err');
+  S.page='list';render();
+}
+async function submitLeaveForm(ev){
+  ev.preventDefault();
+  const fd=new FormData(ev.target);
+  const start=fd.get('startDate'),end=fd.get('endDate');
+  const days=calcDays(start,end);
+  if(days<=0){toast('ช่วงวันที่ไม่ถูกต้อง','err');return}
+  const typeId=fd.get('leaveType');
+  const t=leaveTypeInfo(typeId);
+  const reason=(fd.get('reason')||'').trim();
+  if(t.reasonRequired&&!reason){toast('กรุณาระบุเหตุผลการลา','err');return}
+  const isEdit=!!S.leaveEditId;
+  const prev=isEdit?(S.leaves.find(x=>x.id===S.leaveEditId)||{}):{};
+  let attachmentData='',attachmentName='',attachmentType='';
+  if(t.requireDoc){
+    const docFile=document.getElementById('lv-doc-file');
+    const file=docFile&&docFile.files&&docFile.files[0];
+    if(file){
+      attachmentData=await readFileAsBase64(file);
+      attachmentName=file.name;
+      attachmentType=file.type||'image/jpeg';
+    }else if(!prev.attachmentUrl){
+      toast('กรุณาแนบรูปถ่ายใบรับรองแพทย์','err');return;
+    }
+  }
+  const rec={
+    id:isEdit?S.leaveEditId:uid(),
+    employeeId:fd.get('employeeId'),
+    leaveType:typeId,
+    startDate:start,
+    endDate:end,
+    days:days,
+    reason:reason,
+    attachmentUrl:isEdit?(prev.attachmentUrl||''):'',
+    attachmentData:attachmentData,
+    attachmentName:attachmentName,
+    attachmentType:attachmentType,
+    status:isEdit?(prev.status||'pending'):'pending',
+    approver:isEdit?(prev.approver||''):'',
+    approvedAt:isEdit?(prev.approvedAt||''):'',
+    rejectReason:isEdit?(prev.rejectReason||''):'',
+    createdAt:isEdit?(prev.createdAt||new Date().toISOString()):new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+  };
+  const ok=await apiLeavePost({action:isEdit?'updateLeave':'createLeave',data:rec});
+  if(ok.success){await apiLeaveFetch();toast(isEdit?'แก้ไขคำขอลาสำเร็จ':'ยื่นคำขอลาสำเร็จ','ok')}
+  else toast(ok.error||'บันทึกไม่สำเร็จ','err');
+  S.leaveEditId=null;S.page='list';render();
+}
+async function approveLeave(id){
+  if(!isAdmin())return;
+  const ok=await apiLeavePost({action:'approveLeave',id,approver:S.user.name||S.user.username});
+  if(ok.success){await apiLeaveFetch();toast('อนุมัติคำขอลาสำเร็จ','ok')}
+  else toast(ok.error||'ดำเนินการไม่สำเร็จ','err');
+  render();
+}
+function openReject(id){if(!isAdmin())return;S.rejectId=id;render()}
+function cancelReject(){S.rejectId=null;render()}
+async function doReject(){
+  const id=S.rejectId;
+  const reason=(document.getElementById('reject-reason')||{}).value||'';
+  const ok=await apiLeavePost({action:'rejectLeave',id,approver:S.user.name||S.user.username,rejectReason:reason});
+  S.rejectId=null;
+  if(ok.success){await apiLeaveFetch();toast('ปฏิเสธคำขอลาสำเร็จ','ok')}
+  else toast(ok.error||'ดำเนินการไม่สำเร็จ','err');
+  render();
+}
+
+// ── Navigation ─────────────────────────────────────────────────
+function goPage(p){
+  if(!isAdmin()&&p==='form')p='list';
+  S.page=p;
+  S.menuOpen=false;
+  if(p!=='form')S.leaveEditId=null;
+  S.leaveDelId=null;S.rejectId=null;
+  render();window.scrollTo(0,0);
+  if(p==='form')setTimeout(()=>{updateQuotaBox();updateReasonRequirement();updateDocRequirement()},0);
+}
+function toggleMenu(){S.menuOpen=!S.menuOpen;render()}
+function closeMenu(){S.menuOpen=false;render()}
+
+// ── Render ─────────────────────────────────────────────────────
+function render(){
+  if(!S.user){
+    document.getElementById('app').innerHTML=renderLogin();
+    return;
+  }
+  let content='';
+  if(S.loading){content='<div style="padding:60px;text-align:center;color:#64748b">⏳ กำลังโหลดข้อมูล...</div>'}
+  else if(S.page==='dashboard')content=renderDash();
+  else if(S.page==='list')content=renderList();
+  else if(S.page==='form')content=renderLeaveForm();
+  else if(S.page==='summary')content=renderSummary();
+  const leaveDelModal=S.leaveDelId?`<div class="ov" onclick="cancelLeaveDel()"><div class="modal" onclick="event.stopPropagation()">
+    <h3>⚠️ ยืนยันการลบคำขอลา</h3><p>ต้องการลบคำขอลานี้ออกจากระบบ? การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+    <div class="modal-foot"><button class="btn btn-g" onclick="cancelLeaveDel()">ยกเลิก</button><button class="btn btn-del" onclick="doLeaveDel()">ลบคำขอลา</button></div>
+  </div></div>`:'';
+  const rejectModal=S.rejectId?`<div class="ov" onclick="cancelReject()"><div class="modal" onclick="event.stopPropagation()">
+    <h3>❌ ปฏิเสธคำขอลา</h3><p>ระบุเหตุผลที่ไม่อนุมัติ (ถ้ามี)</p>
+    <div class="fg"><textarea id="reject-reason" rows="3" placeholder="เหตุผลที่ไม่อนุมัติ..."></textarea></div>
+    <div class="modal-foot"><button class="btn btn-g" onclick="cancelReject()">ยกเลิก</button><button class="btn btn-del" onclick="doReject()">ยืนยันปฏิเสธ</button></div>
+  </div></div>`:'';
+  const mobHeader=`<div class="mob-header"><button class="ham" onclick="toggleMenu()">☰</button><div class="mh-logo">🗓️ ระบบจัดการวันลา</div><div class="dot ${S.apiUrl&&S.connected?'on':'off'}" style="margin-right:4px"></div></div>`;
+  const mobOv=`<div class="mob-ov${S.menuOpen?' open':''}" onclick="closeMenu()"></div>`;
+  const botNav=`<nav class="bot-nav"><div class="bn-items">
+    <button class="bn-item${S.page==='dashboard'?' active':''}" onclick="goPage('dashboard')"><span class="bi">📊</span><span>ภาพรวม</span></button>
+    <button class="bn-item${S.page==='list'?' active':''}" onclick="goPage('list')"><span class="bi">📋</span><span>คำขอลา</span></button>
+    ${isAdmin()?`<button class="bn-item${S.page==='form'?' active':''}" onclick="goPage('form')"><span class="bi">📝</span><span>ยื่นลา</span></button>`:''}
+    <button class="bn-item${S.page==='summary'?' active':''}" onclick="goPage('summary')"><span class="bi">📅</span><span>สรุป</span></button>
+    <button class="bn-item" onclick="logout()"><span class="bi">🚪</span><span>ออก</span></button>
+  </div></nav>`;
+  document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${leaveDelModal}${rejectModal}`;
+}
+
+// ── Init ───────────────────────────────────────────────────────
+render();
+if(S.user&&S.apiUrl){
+  S.loading=true;render();
+  Promise.all([apiEmpFetch(),apiLeaveFetch(),apiDeptFetch()]).then(()=>{S.loading=false;render()});
+}
+</script>
+</body>
+</html>

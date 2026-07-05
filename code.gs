@@ -12,18 +12,30 @@
 const SHEET_EMP  = 'พนักงาน';
 const EMP_HEADERS = [
   'id', 'empId', 'fullName', 'nickname', 'company', 'department', 'position',
-  'startDate', 'birthDate', 'address', 'phone', 'education', 'email', 'supervisor',
+  'startDate', 'birthDate', 'gender', 'bloodType', 'address', 'phone', 'education', 'email', 'supervisor',
+  'reference', 'emergencyContact',
   'sickLeaveNoDoc', 'sickLeaveWithDoc', 'personalLeave', 'annualLeave',
   'salaryStartDate', 'baseSalary', 'positionAllowance', 'otherBenefits', 'housingAllowance',
   'status', 'resignDate', 'createdAt', 'updatedAt'
 ];
 const EMP_LABELS = [
   'ID (ระบบ)', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'บริษัท', 'แผนก', 'ตำแหน่ง',
-  'วันที่เริ่มงาน', 'วันเกิด', 'ที่อยู่', 'เบอร์ติดต่อ', 'วุฒิการศึกษา', 'อีเมล', 'ผู้บังคับบัญชา',
+  'วันที่เริ่มงาน', 'วันเกิด', 'เพศ', 'กรุ๊ปเลือด', 'ที่อยู่', 'เบอร์ติดต่อ', 'วุฒิการศึกษา', 'อีเมล', 'ผู้บังคับบัญชา',
+  'ผู้อ้างอิง', 'เบอร์ติดต่อฉุกเฉิน',
   'ลาป่วย(ไม่มีใบ)', 'ลาป่วย(มีใบ)', 'ลากิจ', 'ลาพักร้อน',
   'วันที่เริ่ม(เงินเดือน)', 'เงินเดือนฐาน', 'ค่าตำแหน่ง', 'สวัสดิการอื่น', 'ค่าที่พัก',
   'สถานะ', 'วันที่ลาออก', 'วันที่สร้าง', 'วันที่แก้ไข'
 ];
+
+// ── Sheet: ประวัติการเปลี่ยนตำแหน่ง ───────────────────────────
+const SHEET_POSITION_HISTORY  = 'ประวัติการเปลี่ยนตำแหน่ง';
+const POSITION_HISTORY_HEADERS = ['id', 'employeeId', 'month', 'year', 'position', 'createdAt', 'updatedAt'];
+const POSITION_HISTORY_LABELS  = ['ID', 'รหัสพนักงาน', 'เดือน', 'ปี', 'ตำแหน่ง', 'วันที่สร้าง', 'วันที่แก้ไข'];
+
+// ── Sheet: ประวัติการเปลี่ยนเงินเดือน ─────────────────────────
+const SHEET_SALARY_HISTORY  = 'ประวัติการเปลี่ยนเงินเดือน';
+const SALARY_HISTORY_HEADERS = ['id', 'employeeId', 'month', 'year', 'salary', 'createdAt', 'updatedAt'];
+const SALARY_HISTORY_LABELS  = ['ID', 'รหัสพนักงาน', 'เดือน', 'ปี', 'เงินเดือน', 'วันที่สร้าง', 'วันที่แก้ไข'];
 
 // ── Sheet: แผนก ────────────────────────────────────────────────
 const SHEET_DEPT  = 'แผนก';
@@ -60,6 +72,17 @@ const PAYROLL_LABELS = [
   'เบี้ยขยัน', 'เบี้ยเลี้ยง', 'ค่าตำแหน่ง', 'ค่าสวัสดิการ', 'ค่าที่พัก', 'ตกเบิก',
   'รายรับรวม', 'ประกันสังคม', 'ภาษี', 'กยศ', 'หักลาเกิน', 'ใช้หนี้บริษัท',
   'รายจ่ายรวม', 'คงเหลือ', 'วันที่บันทึก'
+];
+
+// ── Sheet: การลา ───────────────────────────────────────────────
+const SHEET_LEAVE  = 'การลา';
+const LEAVE_HEADERS = [
+  'id', 'employeeId', 'leaveType', 'startDate', 'endDate', 'days', 'reason', 'attachmentUrl',
+  'status', 'approver', 'approvedAt', 'rejectReason', 'createdAt', 'updatedAt'
+];
+const LEAVE_LABELS = [
+  'ID', 'รหัสพนักงาน (FK)', 'ประเภทการลา', 'วันที่เริ่มลา', 'วันที่สิ้นสุด', 'จำนวนวัน', 'เหตุผล', 'เอกสารแนบ (URL)',
+  'สถานะ', 'ผู้อนุมัติ', 'วันที่อนุมัติ/ปฏิเสธ', 'เหตุผลที่ไม่อนุมัติ', 'วันที่ยื่นคำขอ', 'วันที่แก้ไข'
 ];
 
 // ── Sheet helpers ──────────────────────────────────────────────
@@ -106,8 +129,18 @@ function ensureColumns(sheet, labels) {
 }
 
 function getEmpSheet()  {
-  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,90,140,120,130,110,100,200,130,150,160,150,100,100,80,90,110,110,110,120,110,160,160]);
+  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,90,140,120,130,110,100,80,90,200,130,150,160,150,140,140,100,100,80,90,110,110,110,120,110,160,160]);
   ensureColumns(s, EMP_LABELS);
+  return s;
+}
+function getPositionHistorySheet() {
+  const s = initSheet(SHEET_POSITION_HISTORY, POSITION_HISTORY_LABELS, [140,140,90,70,180,160,160]);
+  ensureColumns(s, POSITION_HISTORY_LABELS);
+  return s;
+}
+function getSalaryHistorySheet() {
+  const s = initSheet(SHEET_SALARY_HISTORY, SALARY_HISTORY_LABELS, [140,140,90,70,120,160,160]);
+  ensureColumns(s, SALARY_HISTORY_LABELS);
   return s;
 }
 function getDeptSheet() {
@@ -142,6 +175,26 @@ function getPayrollSheet() {
     [180,60,60,120,160,120, 110,80,80,80,90, 90,90,90,90,90,90, 100,90,90,80,90,100, 100,100,160]);
   ensureColumns(s, PAYROLL_LABELS);
   return s;
+}
+function getLeaveSheet() {
+  const s = initSheet(SHEET_LEAVE, LEAVE_LABELS, [140,140,150,110,110,80,300,220,100,140,140,300,160,160]);
+  ensureColumns(s, LEAVE_LABELS);
+  return s;
+}
+
+// ── Leave attachment (Google Drive) ─────────────────────────────
+function getLeaveDocsFolder() {
+  const folders = DriveApp.getFoldersByName('HRM_LeaveDocs');
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder('HRM_LeaveDocs');
+}
+function saveLeaveAttachment(base64Data, fileName, mimeType) {
+  if (!base64Data) return '';
+  const bytes = Utilities.base64Decode(base64Data);
+  const blob = Utilities.newBlob(bytes, mimeType || 'image/jpeg', fileName || ('leave_doc_' + Date.now()));
+  const file = getLeaveDocsFolder().createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return file.getUrl();
 }
 
 function rowToObj(headers, row) {
@@ -212,6 +265,15 @@ function doGet(e) {
       if (month) rows = rows.filter(r => String(r.month) === month);
       return jsonResp({ success: true, data: rows });
     }
+    if (action === 'listLeaves') {
+      return jsonResp({ success: true, data: readSheet(getLeaveSheet(), LEAVE_HEADERS) });
+    }
+    if (action === 'listPositionHistory') {
+      return jsonResp({ success: true, data: readSheet(getPositionHistorySheet(), POSITION_HISTORY_HEADERS) });
+    }
+    if (action === 'listSalaryHistory') {
+      return jsonResp({ success: true, data: readSheet(getSalaryHistorySheet(), SALARY_HISTORY_HEADERS) });
+    }
     if (action === 'login') {
       const username = e.parameter.username || '';
       const password = e.parameter.password || '';
@@ -238,7 +300,9 @@ function doPost(e) {
     if (action === 'create') {
       const sheet = getEmpSheet();
       sheet.appendRow(objToRow(EMP_HEADERS, data));
-      colorStatus(sheet, sheet.getLastRow(), EMP_HEADERS.indexOf('status') + 1, data.status);
+      const newRow = sheet.getLastRow();
+      fixTextFields(sheet, newRow, data, ['phone', 'emergencyContact']);
+      colorStatus(sheet, newRow, EMP_HEADERS.indexOf('status') + 1, data.status);
       return jsonResp({ success: true });
     }
     if (action === 'update') {
@@ -246,6 +310,7 @@ function doPost(e) {
       const row = findRowById(sheet, data.id);
       if (row < 0) return jsonResp({ success: false, error: 'Employee not found' });
       sheet.getRange(row, 1, 1, EMP_HEADERS.length).setValues([objToRow(EMP_HEADERS, data)]);
+      fixTextFields(sheet, row, data, ['phone', 'emergencyContact']);
       colorStatus(sheet, row, EMP_HEADERS.indexOf('status') + 1, data.status);
       return jsonResp({ success: true });
     }
@@ -357,6 +422,48 @@ function doPost(e) {
       return jsonResp({ success: true });
     }
 
+    // ── Position History ──
+    if (action === 'createPositionHistory') {
+      const sheet = getPositionHistorySheet();
+      sheet.appendRow(objToRow(POSITION_HISTORY_HEADERS, data));
+      return jsonResp({ success: true });
+    }
+    if (action === 'updatePositionHistory') {
+      const sheet = getPositionHistorySheet();
+      const row = findRowById(sheet, data.id);
+      if (row < 0) return jsonResp({ success: false, error: 'Position history not found' });
+      sheet.getRange(row, 1, 1, POSITION_HISTORY_HEADERS.length).setValues([objToRow(POSITION_HISTORY_HEADERS, data)]);
+      return jsonResp({ success: true });
+    }
+    if (action === 'deletePositionHistory') {
+      const sheet = getPositionHistorySheet();
+      const row = findRowById(sheet, id);
+      if (row < 0) return jsonResp({ success: false, error: 'Position history not found' });
+      sheet.deleteRow(row);
+      return jsonResp({ success: true });
+    }
+
+    // ── Salary History ──
+    if (action === 'createSalaryHistory') {
+      const sheet = getSalaryHistorySheet();
+      sheet.appendRow(objToRow(SALARY_HISTORY_HEADERS, data));
+      return jsonResp({ success: true });
+    }
+    if (action === 'updateSalaryHistory') {
+      const sheet = getSalaryHistorySheet();
+      const row = findRowById(sheet, data.id);
+      if (row < 0) return jsonResp({ success: false, error: 'Salary history not found' });
+      sheet.getRange(row, 1, 1, SALARY_HISTORY_HEADERS.length).setValues([objToRow(SALARY_HISTORY_HEADERS, data)]);
+      return jsonResp({ success: true });
+    }
+    if (action === 'deleteSalaryHistory') {
+      const sheet = getSalaryHistorySheet();
+      const row = findRowById(sheet, id);
+      if (row < 0) return jsonResp({ success: false, error: 'Salary history not found' });
+      sheet.deleteRow(row);
+      return jsonResp({ success: true });
+    }
+
     // ── Payroll ──
     if (action === 'savePayroll') {
       const year    = String(body.year  || '');
@@ -425,6 +532,50 @@ function doPost(e) {
       return jsonResp({ success: true });
     }
 
+    // ── Leave ──
+    if (action === 'createLeave') {
+      const sheet = getLeaveSheet();
+      if (data.attachmentData) {
+        data.attachmentUrl = saveLeaveAttachment(data.attachmentData, data.attachmentName, data.attachmentType);
+      }
+      sheet.appendRow(objToRow(LEAVE_HEADERS, data));
+      return jsonResp({ success: true });
+    }
+    if (action === 'updateLeave') {
+      const sheet = getLeaveSheet();
+      const row = findRowById(sheet, data.id);
+      if (row < 0) return jsonResp({ success: false, error: 'Leave request not found' });
+      if (data.attachmentData) {
+        data.attachmentUrl = saveLeaveAttachment(data.attachmentData, data.attachmentName, data.attachmentType);
+      } else if (!data.attachmentUrl) {
+        const existing = rowToObj(LEAVE_HEADERS, sheet.getRange(row, 1, 1, LEAVE_HEADERS.length).getValues()[0]);
+        data.attachmentUrl = existing.attachmentUrl || '';
+      }
+      sheet.getRange(row, 1, 1, LEAVE_HEADERS.length).setValues([objToRow(LEAVE_HEADERS, data)]);
+      return jsonResp({ success: true });
+    }
+    if (action === 'deleteLeave') {
+      const sheet = getLeaveSheet();
+      const row = findRowById(sheet, id);
+      if (row < 0) return jsonResp({ success: false, error: 'Leave request not found' });
+      sheet.deleteRow(row);
+      return jsonResp({ success: true });
+    }
+    if (action === 'approveLeave' || action === 'rejectLeave') {
+      const sheet = getLeaveSheet();
+      const row = findRowById(sheet, id);
+      if (row < 0) return jsonResp({ success: false, error: 'Leave request not found' });
+      const existing = rowToObj(LEAVE_HEADERS, sheet.getRange(row, 1, 1, LEAVE_HEADERS.length).getValues()[0]);
+      const now = new Date().toISOString();
+      existing.status = action === 'approveLeave' ? 'approved' : 'rejected';
+      existing.approver = body.approver || '';
+      existing.approvedAt = now;
+      existing.rejectReason = action === 'rejectLeave' ? (body.rejectReason || '') : '';
+      existing.updatedAt = now;
+      sheet.getRange(row, 1, 1, LEAVE_HEADERS.length).setValues([objToRow(LEAVE_HEADERS, existing)]);
+      return jsonResp({ success: true });
+    }
+
     return jsonResp({ success: false, error: 'Unknown action' });
   } catch (err) {
     return jsonResp({ success: false, error: err.toString() });
@@ -432,6 +583,29 @@ function doPost(e) {
 }
 
 // ── Helpers ────────────────────────────────────────────────────
+function fixTextFields(sheet, row, data, fields) {
+  fields.forEach(function(f) {
+    const col = EMP_HEADERS.indexOf(f) + 1;
+    if (col > 0) {
+      const cell = sheet.getRange(row, col);
+      cell.setNumberFormat('@');
+      cell.setValue(data[f] !== undefined ? String(data[f]) : '');
+    }
+  });
+}
+
+// เรียกครั้งเดียวจาก Apps Script editor (เลือกฟังก์ชันนี้แล้วกด Run)
+// เพื่อตั้งฟอร์แมตคอลัมน์เบอร์ติดต่อ/เบอร์ฉุกเฉินทั้งคอลัมน์เป็น Plain text
+// (ป้องกันเลข 0 นำหน้าหายในแถวที่มีอยู่แล้วซึ่งยังไม่เคยถูกแก้ไขผ่านแอป)
+function fixPhoneColumnFormat() {
+  const sheet = getEmpSheet();
+  const rows = Math.max(sheet.getMaxRows(), 1000);
+  ['phone', 'emergencyContact'].forEach(function(f) {
+    const col = EMP_HEADERS.indexOf(f) + 1;
+    if (col > 0) sheet.getRange(1, col, rows, 1).setNumberFormat('@');
+  });
+}
+
 function colorStatus(sheet, row, col, status) {
   const cell = sheet.getRange(row, col);
   if (status === 'active') {

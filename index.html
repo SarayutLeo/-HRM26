@@ -224,7 +224,7 @@ textarea{resize:vertical;min-height:72px}
 const MTH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const COMPANIES=['บริษัท เคมเทค อินโนเวชั่น จำกัด','บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด'];
 // ── App Config — URL ฝังตรงนี้ ใช้ได้ทุกเครื่อง ─────────────────
-const APP_CONFIG={apiUrl:'https://script.google.com/macros/s/AKfycbwWlxLyMhc9PwFi5I6uz9B8hRLn_GH7QSo_ORGol4qshO8v8rQev55HdtvGJDvPVAxRXw/exec'};
+const APP_CONFIG={apiUrl:'https://script.google.com/macros/s/AKfycbwL9ZI5pZ9Xq8nxo_3BN7WHbwOA3oByxyos5mAXSn2PE2euVbYLO552k_6ZKTfoYtAs/exec'};
 
 // ── State ──────────────────────────────────────────────────────
 const S={
@@ -271,6 +271,14 @@ const S={
   payrollDept:'all',
   payrollCompany:'all',
   payrollData:{},
+  positionHistory:[],
+  positionHistoryModalEmpId:null,
+  positionHistoryEditId:null,
+  positionHistoryDelId:null,
+  salaryHistory:[],
+  salaryHistoryModalEmpId:null,
+  salaryHistoryEditId:null,
+  salaryHistoryDelId:null,
 };
 
 // ── Storage ────────────────────────────────────────────────────
@@ -329,7 +337,15 @@ async function apiLogin(username,password){
   try{
     const url=S.apiUrl+'?action=login&username='+encodeURIComponent(username)+'&password='+encodeURIComponent(password);
     const r=await fetch(url,{redirect:'follow'});
-    return JSON.parse(await r.text());
+    const res=JSON.parse(await r.text());
+    if(res.success||res.error!=='Unknown action')return res;
+    // fallback: deployment เก่าไม่รู้จัก login action → ดึง listUsers แทน
+    const r2=await fetch(S.apiUrl+'?action=listUsers',{redirect:'follow'});
+    const d=JSON.parse(await r2.text());
+    if(!d.success)return{success:false,error:'เชื่อมต่อไม่ได้ กรุณาลองใหม่'};
+    const u=d.data.find(u=>u.username===username&&u.password===password);
+    if(u)return{success:true,user:{id:u.id,username:u.username,name:u.name,role:u.role}};
+    return{success:false,error:'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'};
   }catch{return{success:false,error:'เชื่อมต่อไม่ได้ กรุณาลองใหม่'}}
 }
 async function apiUserFetch(){
@@ -374,6 +390,38 @@ async function apiTrainingFetch(){
   }catch{return false}
 }
 async function apiTrainingPost(body){
+  if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อ'};
+  try{
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+    return JSON.parse(await r.text());
+  }catch{return{success:false,error:'เชื่อมต่อไม่ได้'}}
+}
+async function apiPositionHistoryFetch(){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl+'?action=listPositionHistory',{redirect:'follow'});
+    const d=JSON.parse(await r.text());
+    if(d.success){S.positionHistory=d.data;return true}
+    return false;
+  }catch{return false}
+}
+async function apiPositionHistoryPost(body){
+  if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อ'};
+  try{
+    const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+    return JSON.parse(await r.text());
+  }catch{return{success:false,error:'เชื่อมต่อไม่ได้'}}
+}
+async function apiSalaryHistoryFetch(){
+  if(!S.apiUrl)return false;
+  try{
+    const r=await fetch(S.apiUrl+'?action=listSalaryHistory',{redirect:'follow'});
+    const d=JSON.parse(await r.text());
+    if(d.success){S.salaryHistory=d.data;return true}
+    return false;
+  }catch{return false}
+}
+async function apiSalaryHistoryPost(body){
   if(!S.apiUrl)return{success:false,error:'ไม่ได้เชื่อมต่อ'};
   try{
     const r=await fetch(S.apiUrl,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
@@ -1158,9 +1206,13 @@ function renderEmpDetail(id){
   <div class="fsec">ข้อมูลส่วนตัว</div>
   <div class="fg2">
     <div class="detail-row"><span class="detail-label">วันเกิด / อายุ</span><span class="detail-value">${e.birthDate?fdate(e.birthDate)+' <span style="color:#64748b;font-size:13px">('+calcAge(e.birthDate)+')</span>':'-'}</span></div>
+    ${row('เพศ',esc(e.gender||'-'))}
+    ${row('กรุ๊ปเลือด',esc(e.bloodType||'-'))}
     ${row('เบอร์ติดต่อ',esc(e.phone||'-'))}
     ${row('อีเมล',esc(e.email||'-'))}
     ${row('วุฒิการศึกษา',esc(e.education||'-'))}
+    ${row('ผู้อ้างอิง',esc(e.reference||'-'))}
+    ${row('เบอร์ติดต่อฉุกเฉิน',esc(e.emergencyContact||'-'))}
     <div class="detail-row fg full"><span class="detail-label">ที่อยู่</span><span class="detail-value" style="white-space:pre-line">${esc(e.address||'-')}</span></div>
   </div>
 
@@ -1181,6 +1233,8 @@ function renderEmpDetail(id){
     <div class="detail-row"><span class="detail-label">รายได้รวม/เดือน</span><span class="detail-value" style="font-size:16px;font-weight:700;color:var(--pd)">${totalSalary>0?totalSalary.toLocaleString('th-TH')+' บาท':'-'}</span></div>
   </div>`:''}
 </div>
+${renderEmpPositionHistory(e.id)}
+${renderEmpSalaryHistory(e.id)}
 ${renderEmpTrainings(e.id)}
 ${renderEmpWarnings(e.id)}
 `;}
@@ -1235,6 +1289,20 @@ function renderForm(){
       <input type="date" name="birthDate" value="${esc(toInputDate(e.birthDate))}"></div>
     <div class="fg"><label class="lb">วันที่เริ่มงาน <span class="req">*</span></label>
       <input type="date" name="startDate" value="${esc(toInputDate(e.startDate))}" required></div>
+    <div class="fg"><label class="lb">เพศ</label>
+      <select name="gender">
+        <option value="">-- ไม่ระบุ --</option>
+        ${['ชาย','หญิง','อื่นๆ'].map(g=>`<option value="${g}"${e.gender===g?' selected':''}>${g}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label class="lb">กรุ๊ปเลือด</label>
+      <select name="bloodType">
+        <option value="">-- ไม่ระบุ --</option>
+        ${['A','B','AB','O'].map(b=>`<option value="${b}"${e.bloodType===b?' selected':''}>${b}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label class="lb">ผู้อ้างอิง</label>
+      <input type="text" name="reference" value="${esc(e.reference||'')}" placeholder="ชื่อผู้อ้างอิง"></div>
+    <div class="fg"><label class="lb">เบอร์ติดต่อฉุกเฉิน</label>
+      <input type="text" name="emergencyContact" value="${esc(e.emergencyContact||'')}" placeholder="เบอร์ติดต่อกรณีฉุกเฉิน"></div>
     <div class="fg full"><label class="lb">วุฒิการศึกษา</label>
       <input type="text" name="education" value="${esc(e.education||'')}" placeholder="เช่น ปริญญาตรี วิศวกรรมศาสตร์ มหาวิทยาลัย..."></div>
     <div class="fg full"><label class="lb">ที่อยู่</label>
@@ -1289,8 +1357,103 @@ function renderForm(){
   </div>`}
 </div>
 </form>
+${isEdit?renderEmpPositionHistory(e.id):''}
+${isEdit?renderEmpSalaryHistory(e.id):''}
 ${isEdit?renderEmpTrainings(e.id):''}
 ${isEdit?renderEmpWarnings(e.id):''}`;
+}
+
+// ── Position History in Employee Profile ───────────────────────
+function renderEmpPositionHistory(empId){
+  const list=S.positionHistory.filter(p=>p.employeeId===empId)
+    .sort((a,b)=>(parseInt(b.year)-parseInt(a.year))||(parseInt(b.month)-parseInt(a.month)));
+  return`<div class="tbl-card" style="margin-top:24px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h3 style="margin:0;font-size:16px;color:var(--txt)">🧭 ประวัติการเปลี่ยนตำแหน่ง</h3>
+    ${isAdmin()?`<button class="btn btn-p btn-sm" onclick="openPositionHistoryModal('${empId}')">+ เพิ่มประวัติ</button>`:''}
+  </div>
+  ${list.length?`<div class="tbl-wrap"><table>
+    <thead><tr><th>เดือน/ปี</th><th>ตำแหน่ง</th>${isAdmin()?'<th>จัดการ</th>':''}</tr></thead>
+    <tbody>${list.map(p=>`<tr>
+      <td style="white-space:nowrap">${esc(MTH[(parseInt(p.month)||1)-1]||'')} ${esc(p.year)}</td>
+      <td><strong>${esc(p.position)}</strong></td>
+      ${isAdmin()?`<td style="white-space:nowrap"><button class="btn btn-sm btn-ed" onclick="openPositionHistoryModal('${empId}','${p.id}')">✏️</button><button class="btn btn-sm btn-del" onclick="confirmPositionHistoryDel('${p.id}')" style="margin-left:4px">🗑️</button></td>`:''}
+    </tr>`).join('')}</tbody>
+  </table></div>`:`<div class="empty" style="padding:24px"><div class="ei" style="font-size:28px">🧭</div><p style="color:#94a3b8">ยังไม่มีประวัติการเปลี่ยนตำแหน่ง</p></div>`}
+</div>`;
+}
+function renderPositionHistoryModal(){
+  if(!S.positionHistoryModalEmpId)return'';
+  const isEdit=!!S.positionHistoryEditId;
+  const p=isEdit?S.positionHistory.find(x=>x.id===S.positionHistoryEditId)||{}:{};
+  const curYear=new Date().getFullYear();
+  const curMonth=new Date().getMonth()+1;
+  return`<div class="ov" onclick="closePositionHistoryModal()"><div class="modal" onclick="event.stopPropagation()">
+  <h3>${isEdit?'✏️ แก้ไขประวัติตำแหน่ง':'🧭 เพิ่มประวัติการเปลี่ยนตำแหน่ง'}</h3>
+  <form onsubmit="submitPositionHistory(event)">
+    <div class="fg2">
+      <div class="fg"><label class="lb">เดือน <span class="req">*</span></label>
+        <select name="month" required>
+          ${MTH.map((m,i)=>`<option value="${i+1}" ${(parseInt(p.month)||curMonth)===i+1?'selected':''}>${m}</option>`).join('')}
+        </select></div>
+      <div class="fg"><label class="lb">ปี <span class="req">*</span></label>
+        <input type="number" name="year" value="${esc(p.year||curYear)}" required></div>
+    </div>
+    <div class="fg" style="margin-top:14px"><label class="lb">ตำแหน่ง <span class="req">*</span></label>
+      <input type="text" name="position" value="${esc(p.position||'')}" required placeholder="ระบุตำแหน่งใหม่"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-g" onclick="closePositionHistoryModal()">ยกเลิก</button>
+      <button type="submit" class="btn btn-p">💾 บันทึก</button>
+    </div>
+  </form>
+</div></div>`;
+}
+
+// ── Salary History in Employee Profile ──────────────────────────
+function renderEmpSalaryHistory(empId){
+  if(!isAdmin())return'';
+  const list=S.salaryHistory.filter(s=>s.employeeId===empId)
+    .sort((a,b)=>(parseInt(b.year)-parseInt(a.year))||(parseInt(b.month)-parseInt(a.month)));
+  return`<div class="tbl-card" style="margin-top:24px">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h3 style="margin:0;font-size:16px;color:var(--txt)">💰 ประวัติการเปลี่ยนเงินเดือน</h3>
+    <button class="btn btn-p btn-sm" onclick="openSalaryHistoryModal('${empId}')">+ เพิ่มประวัติ</button>
+  </div>
+  ${list.length?`<div class="tbl-wrap"><table>
+    <thead><tr><th>เดือน/ปี</th><th>เงินเดือน</th><th>จัดการ</th></tr></thead>
+    <tbody>${list.map(s=>`<tr>
+      <td style="white-space:nowrap">${esc(MTH[(parseInt(s.month)||1)-1]||'')} ${esc(s.year)}</td>
+      <td>${s.salary?Number(s.salary).toLocaleString('th-TH')+' บาท':'-'}</td>
+      <td style="white-space:nowrap"><button class="btn btn-sm btn-ed" onclick="openSalaryHistoryModal('${empId}','${s.id}')">✏️</button><button class="btn btn-sm btn-del" onclick="confirmSalaryHistoryDel('${s.id}')" style="margin-left:4px">🗑️</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`:`<div class="empty" style="padding:24px"><div class="ei" style="font-size:28px">💰</div><p style="color:#94a3b8">ยังไม่มีประวัติการเปลี่ยนเงินเดือน</p></div>`}
+</div>`;
+}
+function renderSalaryHistoryModal(){
+  if(!S.salaryHistoryModalEmpId)return'';
+  const isEdit=!!S.salaryHistoryEditId;
+  const s=isEdit?S.salaryHistory.find(x=>x.id===S.salaryHistoryEditId)||{}:{};
+  const curYear=new Date().getFullYear();
+  const curMonth=new Date().getMonth()+1;
+  return`<div class="ov" onclick="closeSalaryHistoryModal()"><div class="modal" onclick="event.stopPropagation()">
+  <h3>${isEdit?'✏️ แก้ไขประวัติเงินเดือน':'💰 เพิ่มประวัติการเปลี่ยนเงินเดือน'}</h3>
+  <form onsubmit="submitSalaryHistory(event)">
+    <div class="fg2">
+      <div class="fg"><label class="lb">เดือน <span class="req">*</span></label>
+        <select name="month" required>
+          ${MTH.map((m,i)=>`<option value="${i+1}" ${(parseInt(s.month)||curMonth)===i+1?'selected':''}>${m}</option>`).join('')}
+        </select></div>
+      <div class="fg"><label class="lb">ปี <span class="req">*</span></label>
+        <input type="number" name="year" value="${esc(s.year||curYear)}" required></div>
+    </div>
+    <div class="fg" style="margin-top:14px"><label class="lb">เงินเดือน (บาท) <span class="req">*</span></label>
+      <input type="number" name="salary" value="${esc(s.salary||'')}" min="0" required placeholder="0"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-g" onclick="closeSalaryHistoryModal()">ยกเลิก</button>
+      <button type="submit" class="btn btn-p">💾 บันทึก</button>
+    </div>
+  </form>
+</div></div>`;
 }
 
 // ── Training in Employee Profile ──────────────────────────────
@@ -1752,7 +1915,15 @@ function render(){
   <h3>⚠️ ยืนยันการลบ</h3><p>ต้องการลบรายการอบรมนี้?</p>
   <div class="modal-foot"><button class="btn btn-g" onclick="cancelTrainingDel()">ยกเลิก</button><button class="btn btn-del" onclick="doTrainingDel()">ลบ</button></div>
 </div></div>`:'';
-  document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${delModal}${deptDelModal}${userDelModal}${trainingDelModal}${warningDelModal}`;
+  const positionHistoryDelModal=S.positionHistoryDelId?`<div class="ov" onclick="cancelPositionHistoryDel()"><div class="modal" onclick="event.stopPropagation()">
+  <h3>⚠️ ยืนยันการลบ</h3><p>ต้องการลบประวัติการเปลี่ยนตำแหน่งนี้?</p>
+  <div class="modal-foot"><button class="btn btn-g" onclick="cancelPositionHistoryDel()">ยกเลิก</button><button class="btn btn-del" onclick="doPositionHistoryDel()">ลบ</button></div>
+</div></div>`:'';
+  const salaryHistoryDelModal=S.salaryHistoryDelId?`<div class="ov" onclick="cancelSalaryHistoryDel()"><div class="modal" onclick="event.stopPropagation()">
+  <h3>⚠️ ยืนยันการลบ</h3><p>ต้องการลบประวัติการเปลี่ยนเงินเดือนนี้?</p>
+  <div class="modal-foot"><button class="btn btn-g" onclick="cancelSalaryHistoryDel()">ยกเลิก</button><button class="btn btn-del" onclick="doSalaryHistoryDel()">ลบ</button></div>
+</div></div>`:'';
+  document.getElementById('app').innerHTML=`${mobHeader}${mobOv}<div class="layout">${renderSidebar()}<main class="main">${content}</main></div>${botNav}${renderSetup()}${delModal}${deptDelModal}${userDelModal}${trainingDelModal}${warningDelModal}${renderPositionHistoryModal()}${renderSalaryHistoryModal()}${positionHistoryDelModal}${salaryHistoryDelModal}`;
 }
 
 // ── Event Handlers ─────────────────────────────────────────────
@@ -1846,6 +2017,10 @@ async function submitForm(ev){
     birthDate:fd.get('birthDate')||'',
     phone:fd.get('phone').trim(),
     education:fd.get('education').trim(),
+    gender:fd.get('gender')||'',
+    bloodType:fd.get('bloodType')||'',
+    reference:fd.get('reference').trim(),
+    emergencyContact:fd.get('emergencyContact').trim(),
     sickLeaveNoDoc:parseInt(fd.get('sickLeaveNoDoc'))||0,
     sickLeaveWithDoc:parseInt(fd.get('sickLeaveWithDoc'))||0,
     personalLeave:parseInt(fd.get('personalLeave'))||0,
@@ -1942,7 +2117,7 @@ async function doLogin(ev){
     render();
     if(S.apiUrl){
       S.loading=true;render();
-      const tasks=[apiFetch(),apiDeptFetch(),apiTrainingFetch(),apiWarningFetch()];
+      const tasks=[apiFetch(),apiDeptFetch(),apiTrainingFetch(),apiWarningFetch(),apiPositionHistoryFetch(),apiSalaryHistoryFetch()];
       if(S.user.role==='admin')tasks.push(apiUserFetch());
       await Promise.all(tasks);
       S.loading=false;render();
@@ -2118,6 +2293,82 @@ async function submitTrainingForm(ev){
   S.trainingEditId=null;S._trainingPreFill='';S.page='training';render();
 }
 
+// ── Position History handlers ───────────────────────────────────
+function openPositionHistoryModal(empId,editId){
+  if(!isAdmin())return;
+  S.positionHistoryModalEmpId=empId;
+  S.positionHistoryEditId=editId||null;
+  render();
+}
+function closePositionHistoryModal(){S.positionHistoryModalEmpId=null;S.positionHistoryEditId=null;render()}
+async function submitPositionHistory(ev){
+  ev.preventDefault();
+  const fd=new FormData(ev.target);
+  const isEdit=!!S.positionHistoryEditId;
+  const prev=isEdit?(S.positionHistory.find(x=>x.id===S.positionHistoryEditId)||{}):{};
+  const rec={
+    id:isEdit?S.positionHistoryEditId:'PH'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase(),
+    employeeId:S.positionHistoryModalEmpId,
+    month:fd.get('month'),
+    year:fd.get('year'),
+    position:fd.get('position').trim(),
+    createdAt:isEdit?(prev.createdAt||new Date().toISOString()):new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+  };
+  const ok=await apiPositionHistoryPost({action:isEdit?'updatePositionHistory':'createPositionHistory',data:rec});
+  if(ok.success){await apiPositionHistoryFetch();toast(isEdit?'แก้ไขประวัติตำแหน่งสำเร็จ':'บันทึกประวัติตำแหน่งสำเร็จ','ok')}
+  else toast(ok.error||'บันทึกไม่สำเร็จ','err');
+  S.positionHistoryModalEmpId=null;S.positionHistoryEditId=null;
+  render();
+}
+function confirmPositionHistoryDel(id){S.positionHistoryDelId=id;render()}
+function cancelPositionHistoryDel(){S.positionHistoryDelId=null;render()}
+async function doPositionHistoryDel(){
+  const id=S.positionHistoryDelId;S.positionHistoryDelId=null;
+  const ok=await apiPositionHistoryPost({action:'deletePositionHistory',id});
+  if(ok.success){S.positionHistory=S.positionHistory.filter(p=>p.id!==id);toast('ลบประวัติสำเร็จ','ok')}
+  else toast(ok.error||'ลบไม่สำเร็จ','err');
+  render();
+}
+
+// ── Salary History handlers ─────────────────────────────────────
+function openSalaryHistoryModal(empId,editId){
+  if(!isAdmin())return;
+  S.salaryHistoryModalEmpId=empId;
+  S.salaryHistoryEditId=editId||null;
+  render();
+}
+function closeSalaryHistoryModal(){S.salaryHistoryModalEmpId=null;S.salaryHistoryEditId=null;render()}
+async function submitSalaryHistory(ev){
+  ev.preventDefault();
+  const fd=new FormData(ev.target);
+  const isEdit=!!S.salaryHistoryEditId;
+  const prev=isEdit?(S.salaryHistory.find(x=>x.id===S.salaryHistoryEditId)||{}):{};
+  const rec={
+    id:isEdit?S.salaryHistoryEditId:'SH'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,4).toUpperCase(),
+    employeeId:S.salaryHistoryModalEmpId,
+    month:fd.get('month'),
+    year:fd.get('year'),
+    salary:parseFloat(fd.get('salary'))||0,
+    createdAt:isEdit?(prev.createdAt||new Date().toISOString()):new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+  };
+  const ok=await apiSalaryHistoryPost({action:isEdit?'updateSalaryHistory':'createSalaryHistory',data:rec});
+  if(ok.success){await apiSalaryHistoryFetch();toast(isEdit?'แก้ไขประวัติเงินเดือนสำเร็จ':'บันทึกประวัติเงินเดือนสำเร็จ','ok')}
+  else toast(ok.error||'บันทึกไม่สำเร็จ','err');
+  S.salaryHistoryModalEmpId=null;S.salaryHistoryEditId=null;
+  render();
+}
+function confirmSalaryHistoryDel(id){S.salaryHistoryDelId=id;render()}
+function cancelSalaryHistoryDel(){S.salaryHistoryDelId=null;render()}
+async function doSalaryHistoryDel(){
+  const id=S.salaryHistoryDelId;S.salaryHistoryDelId=null;
+  const ok=await apiSalaryHistoryPost({action:'deleteSalaryHistory',id});
+  if(ok.success){S.salaryHistory=S.salaryHistory.filter(s=>s.id!==id);toast('ลบประวัติสำเร็จ','ok')}
+  else toast(ok.error||'ลบไม่สำเร็จ','err');
+  render();
+}
+
 // ── Init ───────────────────────────────────────────────────────
 S.emps=lload();
 S.depts=dload();
@@ -2125,7 +2376,7 @@ S.localBackup=backupLoad();
 render();
 if(S.user&&S.apiUrl){
   S.loading=true;render();
-  const tasks=[apiFetch(),apiDeptFetch(),apiTrainingFetch()];
+  const tasks=[apiFetch(),apiDeptFetch(),apiTrainingFetch(),apiWarningFetch(),apiPositionHistoryFetch(),apiSalaryHistoryFetch()];
   if(S.user.role==='admin')tasks.push(apiUserFetch());
   Promise.all(tasks).then(()=>{S.loading=false;render()});
 }
