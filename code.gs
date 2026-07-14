@@ -14,7 +14,7 @@ const EMP_HEADERS = [
   'id', 'empId', 'fullName', 'nickname', 'company', 'department', 'position',
   'startDate', 'birthDate', 'gender', 'bloodType', 'address', 'phone', 'education', 'email', 'supervisor',
   'reference', 'emergencyContact',
-  'fullNameEn', 'maritalStatus', 'nationality', 'ethnicity', 'religion', 'idCardNo',
+  'fullNameEn', 'nicknameEn', 'maritalStatus', 'nationality', 'ethnicity', 'religion', 'idCardNo',
   'height', 'weight', 'taxId', 'photoUrl', 'militaryStatus', 'disability', 'chronicDisease', 'hospital',
   'sickLeaveNoDoc', 'sickLeaveWithDoc', 'personalLeave', 'annualLeave',
   'salaryStartDate', 'baseSalary', 'positionAllowance', 'otherBenefits', 'housingAllowance',
@@ -24,7 +24,7 @@ const EMP_LABELS = [
   'ID (ระบบ)', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'บริษัท', 'แผนก', 'ตำแหน่ง',
   'วันที่เริ่มงาน', 'วันเกิด', 'เพศ', 'กรุ๊ปเลือด', 'ที่อยู่', 'เบอร์ติดต่อ', 'วุฒิการศึกษา', 'อีเมล', 'ผู้บังคับบัญชา',
   'ผู้อ้างอิง', 'เบอร์ติดต่อฉุกเฉิน',
-  'ชื่อ-นามสกุล (อังกฤษ)', 'สถานะการสมรส', 'สัญชาติ', 'เชื้อชาติ', 'ศาสนา', 'เลขบัตรประชาชน/พาสปอร์ต/ใบขับขี่',
+  'ชื่อ-นามสกุล (อังกฤษ)', 'ชื่อเล่น (อังกฤษ)', 'สถานะการสมรส', 'สัญชาติ', 'เชื้อชาติ', 'ศาสนา', 'เลขบัตรประชาชน/พาสปอร์ต/ใบขับขี่',
   'ส่วนสูง (ซม.)', 'น้ำหนัก (กก.)', 'เลขผู้เสียภาษี (กรณีไม่ใช่สัญชาติไทย)', 'รูปพนักงาน (URL)', 'สถานะทางทหาร', 'ผู้พิการ', 'โรคประจำตัว/แพ้ยา-อาหาร', 'โรงพยาบาลประกันสังคม',
   'ลาป่วย(ไม่มีใบ)', 'ลาป่วย(มีใบ)', 'ลากิจ', 'ลาพักร้อน',
   'วันที่เริ่ม(เงินเดือน)', 'เงินเดือนฐาน', 'ค่าตำแหน่ง', 'สวัสดิการอื่น', 'ค่าที่พัก',
@@ -133,7 +133,7 @@ function ensureColumns(sheet, labels) {
 }
 
 function getEmpSheet()  {
-  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,90,140,120,130,110,100,80,90,200,130,150,160,150,140,140,160,110,100,100,100,150,80,80,140,200,140,110,220,180,100,100,80,90,110,110,110,120,110,160,160]);
+  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,90,140,120,130,110,100,80,90,200,130,150,160,150,140,140,160,110,110,100,100,100,150,80,80,140,200,140,110,220,180,100,100,80,90,110,110,110,120,110,160,160]);
   ensureColumns(s, EMP_LABELS);
   return s;
 }

@@ -1193,7 +1193,30 @@ function renderEmpDetail(id){
     ${e.status==='resigned'&&e.resignDate?`<span style="font-size:12px;color:#94a3b8">ลาออกเมื่อ ${fdate(e.resignDate)}</span>`:''}
   </div>
 
-  <div class="fsec">ข้อมูลการทำงาน</div>
+  <div class="fsec">ข้อมูลส่วนบุคคล</div>
+  <div class="fg2">
+    ${e.photoUrl?`<div class="detail-row fg full"><span class="detail-label">รูปพนักงาน</span><span class="detail-value"><img src="${esc(e.photoUrl)}" style="width:96px;height:96px;border-radius:10px;object-fit:cover;border:1px solid var(--bdr);display:block;margin-top:4px"></span></div>`:''}
+    ${row('ชื่อเล่น',esc(e.nickname||'-'))}
+    ${row('ชื่อ-นามสกุล (ภาษาอังกฤษ)',esc(e.fullNameEn||'-'))}
+    ${row('ชื่อเล่น (ภาษาอังกฤษ)',esc(e.nicknameEn||'-'))}
+    ${row('เพศ',esc(e.gender||'-'))}
+    <div class="detail-row"><span class="detail-label">วันเกิด / อายุ</span><span class="detail-value">${e.birthDate?fdate(e.birthDate)+' <span style="color:#64748b;font-size:13px">('+calcAge(e.birthDate)+')</span>':'-'}</span></div>
+    ${row('กรุ๊ปเลือด',esc(e.bloodType||'-'))}
+    ${row('สถานะการสมรส',esc(e.maritalStatus||'-'))}
+    ${row('สัญชาติ',esc(e.nationality||'-'))}
+    ${row('เชื้อชาติ',esc(e.ethnicity||'-'))}
+    ${row('ศาสนา',esc(e.religion||'-'))}
+    ${row('เลขบัตรประชาชน/พาสปอร์ต/ใบขับขี่',esc(e.idCardNo||'-'))}
+    ${row('ส่วนสูง / น้ำหนัก',(e.height||e.weight)?esc((e.height||'-')+' ซม. / '+(e.weight||'-')+' กก.'):'-')}
+    ${row('เลขผู้เสียภาษี',esc(e.taxId||'-'))}
+    ${row('วุฒิการศึกษา',esc(e.education||'-'))}
+    ${e.gender==='ชาย'?row('สถานะทางทหาร',esc(e.militaryStatus||'-')):''}
+    ${row('ผู้พิการ',esc(e.disability||'ไม่มี'))}
+    ${row('โรงพยาบาลประกันสังคม',esc(e.hospital||'-'))}
+    <div class="detail-row fg full"><span class="detail-label">โรคประจำตัว / ประวัติแพ้ยา-อาหาร</span><span class="detail-value" style="white-space:pre-line">${esc(e.chronicDisease||'-')}</span></div>
+  </div>
+
+  <div class="fsec">ข้อมูลเกี่ยวกับการทำงาน</div>
   <div class="fg2">
     ${row('บริษัท',esc(e.company||'-'))}
     ${row('แผนก',esc(e.department||'-'))}
@@ -1203,29 +1226,12 @@ function renderEmpDetail(id){
     <div class="detail-row"><span class="detail-label">อายุงาน</span><span class="detail-value" style="color:var(--pd);font-weight:700">${tenure(e.startDate,e.status==='resigned'?e.resignDate:null)}${e.status==='resigned'?' <span style="font-size:11px;font-weight:400;color:#94a3b8">(ถึงวันลาออก)</span>':''}</span></div>
   </div>
 
-  <div class="fsec">ข้อมูลส่วนตัว</div>
+  <div class="fsec">ข้อมูลการติดต่อ</div>
   <div class="fg2">
-    ${e.photoUrl?`<div class="detail-row fg full"><span class="detail-label">รูปพนักงาน</span><span class="detail-value"><img src="${esc(e.photoUrl)}" style="width:96px;height:96px;border-radius:10px;object-fit:cover;border:1px solid var(--bdr);display:block;margin-top:4px"></span></div>`:''}
-    <div class="detail-row"><span class="detail-label">วันเกิด / อายุ</span><span class="detail-value">${e.birthDate?fdate(e.birthDate)+' <span style="color:#64748b;font-size:13px">('+calcAge(e.birthDate)+')</span>':'-'}</span></div>
-    ${row('เพศ',esc(e.gender||'-'))}
-    ${row('กรุ๊ปเลือด',esc(e.bloodType||'-'))}
     ${row('เบอร์ติดต่อ',esc(e.phone||'-'))}
     ${row('อีเมล',esc(e.email||'-'))}
-    ${row('วุฒิการศึกษา',esc(e.education||'-'))}
     ${row('ผู้อ้างอิง',esc(e.reference||'-'))}
     ${row('เบอร์ติดต่อฉุกเฉิน',esc(e.emergencyContact||'-'))}
-    ${row('ชื่อ-นามสกุล (อังกฤษ)',esc(e.fullNameEn||'-'))}
-    ${row('สถานะการสมรส',esc(e.maritalStatus||'-'))}
-    ${row('สัญชาติ',esc(e.nationality||'-'))}
-    ${row('เชื้อชาติ',esc(e.ethnicity||'-'))}
-    ${row('ศาสนา',esc(e.religion||'-'))}
-    ${row('เลขบัตรประชาชน/พาสปอร์ต/ใบขับขี่',esc(e.idCardNo||'-'))}
-    ${row('ส่วนสูง / น้ำหนัก',(e.height||e.weight)?esc((e.height||'-')+' ซม. / '+(e.weight||'-')+' กก.'):'-')}
-    ${row('เลขผู้เสียภาษี',esc(e.taxId||'-'))}
-    ${e.gender==='ชาย'?row('สถานะทางทหาร',esc(e.militaryStatus||'-')):''}
-    ${row('ผู้พิการ',esc(e.disability||'ไม่มี'))}
-    ${row('โรงพยาบาลประกันสังคม',esc(e.hospital||'-'))}
-    <div class="detail-row fg full"><span class="detail-label">โรคประจำตัว / ประวัติแพ้ยา-อาหาร</span><span class="detail-value" style="white-space:pre-line">${esc(e.chronicDisease||'-')}</span></div>
     <div class="detail-row fg full"><span class="detail-label">ที่อยู่</span><span class="detail-value" style="white-space:pre-line">${esc(e.address||'-')}</span></div>
   </div>
 
@@ -1266,71 +1272,33 @@ function renderForm(){
 </div>
 <form id="ef" onsubmit="submitForm(event)">
 <div class="form-card">
-  <div class="fsec">ข้อมูลพื้นฐาน</div>
-  <div class="fg2">
-    <div class="fg"><label class="lb">รหัสพนักงาน <span class="req">*</span></label>
-      <input type="text" name="empId" value="${esc(e.empId||sugId)}" required placeholder="เช่น EMP0001"></div>
-    <div class="fg"><label class="lb">ชื่อ-นามสกุล <span class="req">*</span></label>
-      <input type="text" name="fullName" value="${esc(e.fullName||'')}" required placeholder="ชื่อ-นามสกุล"></div>
-    <div class="fg"><label class="lb">ชื่อเล่น</label>
-      <input type="text" name="nickname" value="${esc(e.nickname||'')}" placeholder="ชื่อเล่น"></div>
-    <div class="fg"><label class="lb">บริษัท <span class="req">*</span></label>
-      <select name="company" id="company-sel" onchange="onFormCompanyChange(this.value)" required>
-        <option value="">-- เลือกบริษัท --</option>
-        <option value="บริษัท เคมเทค อินโนเวชั่น จำกัด" ${e.company==='บริษัท เคมเทค อินโนเวชั่น จำกัด'?'selected':''}>บริษัท เคมเทค อินโนเวชั่น จำกัด</option>
-        <option value="บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด" ${e.company==='บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด'?'selected':''}>บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด</option>
-      </select></div>
-    <div class="fg"><label class="lb">แผนก <span class="req">*</span></label>
-      <select name="department" id="dept-sel" onchange="fillSupervisor(this.value)" required>
-        <option value="">-- เลือกแผนก --</option>
-        ${[...S.depts].filter(d=>!e.company||d.company===e.company).sort((a,b)=>(a.name||'').localeCompare(b.name||'','th')).map(d=>`<option value="${esc(d.name)}"${e.department===d.name?' selected':''}>${esc(d.name)}</option>`).join('')}
-        ${e.department&&!S.depts.find(d=>d.name===e.department)?`<option value="${esc(e.department)}" selected>${esc(e.department)}</option>`:''}
-      </select>
-      ${S.depts.length===0?`<span style="font-size:11px;color:#f59e0b;margin-top:3px">⚠️ ยังไม่มีแผนก — <a href="#" onclick="goPage('depts');return false" style="color:var(--p)">เพิ่มแผนกก่อน</a></span>`:''}
-    </div>
-    <div class="fg"><label class="lb">ตำแหน่ง <span class="req">*</span></label>
-      <select name="position" required>
-        ${['พนักงาน','หัวหน้าทีม','หัวหน้างาน','ผู้ช่วยผู้จัดการแผนก','ผู้จัดการแผนก','ผู้จัดการทั่วไป','กรรมการผู้จัดการ'].map(p=>`<option value="${p}"${(e.position||'พนักงาน')===p?' selected':''}>${p}</option>`).join('')}
-      </select></div>
-    <div class="fg"><label class="lb">ผู้บังคับบัญชา <span style="font-size:11px;color:#94a3b8;font-weight:400">(อัตโนมัติจากแผนก)</span></label>
-      <input type="text" name="supervisor" id="supervisor-inp" value="${esc(e.supervisor||'')}" placeholder="เลือกแผนกเพื่อกรอกอัตโนมัติ"></div>
-    <div class="fg"><label class="lb">อีเมล</label>
-      <input type="email" name="email" value="${esc(e.email||'')}" placeholder="email@company.com"></div>
-    <div class="fg"><label class="lb">เบอร์ติดต่อ</label>
-      <input type="text" name="phone" value="${esc(e.phone||'')}" placeholder="เช่น 0812345678"></div>
-    <div class="fg"><label class="lb">วันเกิด</label>
-      <input type="date" name="birthDate" value="${esc(toInputDate(e.birthDate))}"></div>
-    <div class="fg"><label class="lb">วันที่เริ่มงาน <span class="req">*</span></label>
-      <input type="date" name="startDate" value="${esc(toInputDate(e.startDate))}" required></div>
-    <div class="fg"><label class="lb">เพศ</label>
-      <select name="gender" onchange="toggleMilitary(this.value)">
-        <option value="">-- ไม่ระบุ --</option>
-        ${['ชาย','หญิง','อื่นๆ'].map(g=>`<option value="${g}"${e.gender===g?' selected':''}>${g}</option>`).join('')}
-      </select></div>
-    <div class="fg"><label class="lb">กรุ๊ปเลือด</label>
-      <select name="bloodType">
-        <option value="">-- ไม่ระบุ --</option>
-        ${['A','B','AB','O'].map(b=>`<option value="${b}"${e.bloodType===b?' selected':''}>${b}</option>`).join('')}
-      </select></div>
-    <div class="fg"><label class="lb">ผู้อ้างอิง</label>
-      <input type="text" name="reference" value="${esc(e.reference||'')}" placeholder="ชื่อผู้อ้างอิง"></div>
-    <div class="fg"><label class="lb">เบอร์ติดต่อฉุกเฉิน</label>
-      <input type="text" name="emergencyContact" value="${esc(e.emergencyContact||'')}" placeholder="เบอร์ติดต่อกรณีฉุกเฉิน"></div>
-    <div class="fg full"><label class="lb">วุฒิการศึกษา</label>
-      <input type="text" name="education" value="${esc(e.education||'')}" placeholder="เช่น ปริญญาตรี วิศวกรรมศาสตร์ มหาวิทยาลัย..."></div>
-    <div class="fg full"><label class="lb">ที่อยู่</label>
-      <textarea name="address" placeholder="ที่อยู่ปัจจุบัน">${esc(e.address||'')}</textarea></div>
-  </div>
-
-  <div class="fsec">ข้อมูลส่วนตัวเพิ่มเติม</div>
+  <div class="fsec">ข้อมูลส่วนบุคคล</div>
   <div class="fg2">
     <div class="fg full"><label class="lb">รูปพนักงาน</label>
       <div style="display:flex;align-items:center;gap:14px">
         <img id="photo-preview" src="${esc(e.photoUrl||'')}" style="width:84px;height:84px;border-radius:10px;object-fit:cover;background:#f1f5f9;border:1px solid var(--bdr);display:${e.photoUrl?'block':'none'}">
         <input type="file" id="photo-file" accept="image/*" onchange="previewEmpPhoto(event)">
       </div></div>
-    <div class="fg"><label class="lb">ชื่อ-นามสกุล ภาษาอังกฤษ (ชื่อเล่น)</label>
-      <input type="text" name="fullNameEn" value="${esc(e.fullNameEn||'')}" placeholder="เช่น John Smith (Jo)"></div>
+    <div class="fg"><label class="lb">ชื่อ-นามสกุล <span class="req">*</span></label>
+      <input type="text" name="fullName" value="${esc(e.fullName||'')}" required placeholder="ชื่อ-นามสกุล"></div>
+    <div class="fg"><label class="lb">ชื่อเล่น</label>
+      <input type="text" name="nickname" value="${esc(e.nickname||'')}" placeholder="ชื่อเล่น"></div>
+    <div class="fg"><label class="lb">ชื่อ-นามสกุล (ภาษาอังกฤษ)</label>
+      <input type="text" name="fullNameEn" value="${esc(e.fullNameEn||'')}" placeholder="เช่น John Smith"></div>
+    <div class="fg"><label class="lb">ชื่อเล่น (ภาษาอังกฤษ)</label>
+      <input type="text" name="nicknameEn" value="${esc(e.nicknameEn||'')}" placeholder="เช่น Jo"></div>
+    <div class="fg"><label class="lb">เพศ</label>
+      <select name="gender" onchange="toggleMilitary(this.value)">
+        <option value="">-- ไม่ระบุ --</option>
+        ${['ชาย','หญิง','อื่นๆ'].map(g=>`<option value="${g}"${e.gender===g?' selected':''}>${g}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label class="lb">วันเกิด</label>
+      <input type="date" name="birthDate" value="${esc(toInputDate(e.birthDate))}"></div>
+    <div class="fg"><label class="lb">กรุ๊ปเลือด</label>
+      <select name="bloodType">
+        <option value="">-- ไม่ระบุ --</option>
+        ${['A','B','AB','O'].map(b=>`<option value="${b}"${e.bloodType===b?' selected':''}>${b}</option>`).join('')}
+      </select></div>
     <div class="fg"><label class="lb">สถานะการสมรส</label>
       <select name="maritalStatus">
         <option value="">-- ไม่ระบุ --</option>
@@ -1353,6 +1321,8 @@ function renderForm(){
       <input type="number" name="weight" value="${esc(e.weight||'')}" min="0" placeholder="กก."></div>
     <div class="fg"><label class="lb">เลขผู้เสียภาษี <span style="font-size:11px;color:#94a3b8;font-weight:400">(กรณีไม่ใช่สัญชาติไทย)</span></label>
       <input type="text" name="taxId" value="${esc(e.taxId||'')}" placeholder="Tax ID"></div>
+    <div class="fg"><label class="lb">วุฒิการศึกษา</label>
+      <input type="text" name="education" value="${esc(e.education||'')}" placeholder="เช่น ปริญญาตรี วิศวกรรมศาสตร์ มหาวิทยาลัย..."></div>
     <div class="fg" id="military-wrap" style="display:${e.gender==='หญิง'?'none':'flex'}"><label class="lb">สถานะทางทหาร <span style="font-size:11px;color:#94a3b8;font-weight:400">(เพศชาย)</span></label>
       <select name="militaryStatus">
         <option value="">-- ไม่ระบุ --</option>
@@ -1367,6 +1337,56 @@ function renderForm(){
       <input type="text" name="hospital" value="${esc(e.hospital||'')}" placeholder="ชื่อโรงพยาบาล"></div>
     <div class="fg full"><label class="lb">โรคประจำตัว / ประวัติแพ้ยา-อาหาร</label>
       <textarea name="chronicDisease" placeholder="ระบุโรคประจำตัว, ประวัติแพ้ยา หรือแพ้อาหาร (ถ้ามี)">${esc(e.chronicDisease||'')}</textarea></div>
+  </div>
+
+  <div class="fsec">ข้อมูลเกี่ยวกับการทำงาน</div>
+  <div class="fg2">
+    <div class="fg"><label class="lb">รหัสพนักงาน <span class="req">*</span></label>
+      <input type="text" name="empId" value="${esc(e.empId||sugId)}" required placeholder="เช่น EMP0001"></div>
+    <div class="fg"><label class="lb">บริษัท <span class="req">*</span></label>
+      <select name="company" id="company-sel" onchange="onFormCompanyChange(this.value)" required>
+        <option value="">-- เลือกบริษัท --</option>
+        <option value="บริษัท เคมเทค อินโนเวชั่น จำกัด" ${e.company==='บริษัท เคมเทค อินโนเวชั่น จำกัด'?'selected':''}>บริษัท เคมเทค อินโนเวชั่น จำกัด</option>
+        <option value="บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด" ${e.company==='บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด'?'selected':''}>บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด</option>
+      </select></div>
+    <div class="fg"><label class="lb">แผนก <span class="req">*</span></label>
+      <select name="department" id="dept-sel" onchange="fillSupervisor(this.value)" required>
+        <option value="">-- เลือกแผนก --</option>
+        ${[...S.depts].filter(d=>!e.company||d.company===e.company).sort((a,b)=>(a.name||'').localeCompare(b.name||'','th')).map(d=>`<option value="${esc(d.name)}"${e.department===d.name?' selected':''}>${esc(d.name)}</option>`).join('')}
+        ${e.department&&!S.depts.find(d=>d.name===e.department)?`<option value="${esc(e.department)}" selected>${esc(e.department)}</option>`:''}
+      </select>
+      ${S.depts.length===0?`<span style="font-size:11px;color:#f59e0b;margin-top:3px">⚠️ ยังไม่มีแผนก — <a href="#" onclick="goPage('depts');return false" style="color:var(--p)">เพิ่มแผนกก่อน</a></span>`:''}
+    </div>
+    <div class="fg"><label class="lb">ตำแหน่ง <span class="req">*</span></label>
+      <select name="position" required>
+        ${['พนักงาน','หัวหน้าทีม','หัวหน้างาน','ผู้ช่วยผู้จัดการแผนก','ผู้จัดการแผนก','ผู้จัดการทั่วไป','กรรมการผู้จัดการ'].map(p=>`<option value="${p}"${(e.position||'พนักงาน')===p?' selected':''}>${p}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label class="lb">ผู้บังคับบัญชา <span style="font-size:11px;color:#94a3b8;font-weight:400">(อัตโนมัติจากแผนก)</span></label>
+      <input type="text" name="supervisor" id="supervisor-inp" value="${esc(e.supervisor||'')}" placeholder="เลือกแผนกเพื่อกรอกอัตโนมัติ"></div>
+    <div class="fg"><label class="lb">วันที่เริ่มงาน <span class="req">*</span></label>
+      <input type="date" name="startDate" value="${esc(toInputDate(e.startDate))}" required></div>
+    <div class="fg"><label class="lb">สถานะปัจจุบัน <span class="req">*</span></label>
+      <select name="status" id="st-sel" onchange="toggleRD(this.value)" required>
+        <option value="active" ${(e.status||'active')==='active'?'selected':''}>พนักงานปัจจุบัน</option>
+        <option value="resigned" ${e.status==='resigned'?'selected':''}>ลาออกแล้ว</option>
+      </select>
+    </div>
+    <div class="fg" id="rd-wrap" style="display:${e.status==='resigned'?'flex':'none'}"><label class="lb">วันที่ลาออก <span class="req">*</span></label>
+      <input type="date" name="resignDate" id="rd-inp" value="${esc(toInputDate(e.resignDate))}" ${e.status==='resigned'?'required':''}></div>
+  </div>
+
+  <div class="fsec">ข้อมูลการติดต่อ</div>
+  <div class="fg2">
+    <div class="fg"><label class="lb">เบอร์ติดต่อ</label>
+      <input type="text" name="phone" value="${esc(e.phone||'')}" placeholder="เช่น 0812345678"></div>
+    <div class="fg"><label class="lb">อีเมล</label>
+      <input type="email" name="email" value="${esc(e.email||'')}" placeholder="email@company.com"></div>
+    <div class="fg"><label class="lb">ผู้อ้างอิง</label>
+      <input type="text" name="reference" value="${esc(e.reference||'')}" placeholder="ชื่อผู้อ้างอิง"></div>
+    <div class="fg"><label class="lb">เบอร์ติดต่อฉุกเฉิน</label>
+      <input type="text" name="emergencyContact" value="${esc(e.emergencyContact||'')}" placeholder="เบอร์ติดต่อกรณีฉุกเฉิน"></div>
+    <div class="fg full"><label class="lb">ที่อยู่</label>
+      <textarea name="address" placeholder="ที่อยู่ปัจจุบัน">${esc(e.address||'')}</textarea></div>
   </div>
 
   <div class="fsec">สิทธิการลา (จำนวนวัน/ปี)</div>
@@ -1391,18 +1411,6 @@ function renderForm(){
       <input type="number" name="otherBenefits" id="sal-other" value="${e.otherBenefits||''}" min="0" placeholder="0" oninput="calcTotal()"></div>
     <div class="fg"><label class="lb">รายได้รวมต่อเดือน (บาท)</label>
       <input type="text" id="sal-total" value="${e.baseSalary||e.positionAllowance||e.otherBenefits?((parseFloat(e.baseSalary)||0)+(parseFloat(e.positionAllowance)||0)+(parseFloat(e.otherBenefits)||0)).toLocaleString('th-TH'):''}" placeholder="คำนวณอัตโนมัติ" readonly style="background:#f0f9ff;color:var(--pd);font-weight:700;cursor:default"></div>
-  </div>
-
-  <div class="fsec">สถานะการทำงาน</div>
-  <div class="fg2">
-    <div class="fg"><label class="lb">สถานะปัจจุบัน <span class="req">*</span></label>
-      <select name="status" id="st-sel" onchange="toggleRD(this.value)" required>
-        <option value="active" ${(e.status||'active')==='active'?'selected':''}>พนักงานปัจจุบัน</option>
-        <option value="resigned" ${e.status==='resigned'?'selected':''}>ลาออกแล้ว</option>
-      </select>
-    </div>
-    <div class="fg" id="rd-wrap" style="display:${e.status==='resigned'?'flex':'none'}"><label class="lb">วันที่ลาออก <span class="req">*</span></label>
-      <input type="date" name="resignDate" id="rd-inp" value="${esc(toInputDate(e.resignDate))}" ${e.status==='resigned'?'required':''}></div>
   </div>
 
   ${isEdit?`<div class="form-foot" style="justify-content:space-between">
@@ -2111,6 +2119,7 @@ async function submitForm(ev){
     reference:fd.get('reference').trim(),
     emergencyContact:fd.get('emergencyContact').trim(),
     fullNameEn:fd.get('fullNameEn').trim(),
+    nicknameEn:fd.get('nicknameEn').trim(),
     maritalStatus:fd.get('maritalStatus')||'',
     nationality:fd.get('nationality').trim(),
     ethnicity:fd.get('ethnicity').trim(),
