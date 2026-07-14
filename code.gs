@@ -11,7 +11,7 @@
 // ── Sheet: พนักงาน ─────────────────────────────────────────────
 const SHEET_EMP  = 'พนักงาน';
 const EMP_HEADERS = [
-  'id', 'empId', 'fullName', 'nickname', 'company', 'department', 'position',
+  'id', 'empId', 'namePrefix', 'fullName', 'nickname', 'company', 'department', 'position',
   'startDate', 'birthDate', 'gender', 'bloodType', 'address', 'phone', 'education', 'email', 'supervisor',
   'reference', 'emergencyContact',
   'fullNameEn', 'nicknameEn', 'maritalStatus', 'nationality', 'ethnicity', 'religion', 'idCardNo',
@@ -21,7 +21,7 @@ const EMP_HEADERS = [
   'status', 'resignDate', 'createdAt', 'updatedAt'
 ];
 const EMP_LABELS = [
-  'ID (ระบบ)', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'บริษัท', 'แผนก', 'ตำแหน่ง',
+  'ID (ระบบ)', 'รหัสพนักงาน', 'คำนำหน้าชื่อ', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'บริษัท', 'แผนก', 'ตำแหน่ง',
   'วันที่เริ่มงาน', 'วันเกิด', 'เพศ', 'กรุ๊ปเลือด', 'ที่อยู่', 'เบอร์ติดต่อ', 'วุฒิการศึกษา', 'อีเมล', 'ผู้บังคับบัญชา',
   'ผู้อ้างอิง', 'เบอร์ติดต่อฉุกเฉิน',
   'ชื่อ-นามสกุล (อังกฤษ)', 'ชื่อเล่น (อังกฤษ)', 'สถานะการสมรส', 'สัญชาติ', 'เชื้อชาติ', 'ศาสนา', 'เลขบัตรประชาชน/พาสปอร์ต/ใบขับขี่',
@@ -133,7 +133,7 @@ function ensureColumns(sheet, labels) {
 }
 
 function getEmpSheet()  {
-  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,90,140,120,130,110,100,80,90,200,130,150,160,150,140,140,160,110,110,100,100,100,150,80,80,140,200,140,110,220,180,100,100,80,90,110,110,110,120,110,160,160]);
+  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,90,160,90,140,120,130,110,100,80,90,200,130,150,160,150,140,140,160,110,110,100,100,100,150,80,80,140,200,140,110,220,180,100,100,80,90,110,110,110,120,110,160,160]);
   ensureColumns(s, EMP_LABELS);
   return s;
 }

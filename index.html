@@ -1196,6 +1196,8 @@ function renderEmpDetail(id){
   <div class="fsec">ข้อมูลส่วนบุคคล</div>
   <div class="fg2">
     ${e.photoUrl?`<div class="detail-row fg full"><span class="detail-label">รูปพนักงาน</span><span class="detail-value"><img src="${esc(e.photoUrl)}" style="width:96px;height:96px;border-radius:10px;object-fit:cover;border:1px solid var(--bdr);display:block;margin-top:4px"></span></div>`:''}
+    ${row('คำนำหน้าชื่อ',esc(e.namePrefix||'-'))}
+    ${row('ชื่อ-นามสกุล',esc(e.fullName||'-'))}
     ${row('ชื่อเล่น',esc(e.nickname||'-'))}
     ${row('ชื่อ-นามสกุล (ภาษาอังกฤษ)',esc(e.fullNameEn||'-'))}
     ${row('ชื่อเล่น (ภาษาอังกฤษ)',esc(e.nicknameEn||'-'))}
@@ -1207,23 +1209,26 @@ function renderEmpDetail(id){
     ${row('เชื้อชาติ',esc(e.ethnicity||'-'))}
     ${row('ศาสนา',esc(e.religion||'-'))}
     ${row('เลขบัตรประชาชน/พาสปอร์ต/ใบขับขี่',esc(e.idCardNo||'-'))}
-    ${row('ส่วนสูง / น้ำหนัก',(e.height||e.weight)?esc((e.height||'-')+' ซม. / '+(e.weight||'-')+' กก.'):'-')}
+    ${row('ส่วนสูง (ซม.)',esc(e.height||'-'))}
+    ${row('น้ำหนัก (กก.)',esc(e.weight||'-'))}
     ${row('เลขผู้เสียภาษี',esc(e.taxId||'-'))}
     ${row('วุฒิการศึกษา',esc(e.education||'-'))}
     ${e.gender==='ชาย'?row('สถานะทางทหาร',esc(e.militaryStatus||'-')):''}
-    ${row('ผู้พิการ',esc(e.disability||'ไม่มี'))}
+    ${row('เป็นผู้พิการหรือไม่',esc(e.disability||'ไม่ใช่'))}
     ${row('โรงพยาบาลประกันสังคม',esc(e.hospital||'-'))}
     <div class="detail-row fg full"><span class="detail-label">โรคประจำตัว / ประวัติแพ้ยา-อาหาร</span><span class="detail-value" style="white-space:pre-line">${esc(e.chronicDisease||'-')}</span></div>
   </div>
 
   <div class="fsec">ข้อมูลเกี่ยวกับการทำงาน</div>
   <div class="fg2">
+    ${row('รหัสพนักงาน',esc(e.empId||'-'))}
     ${row('บริษัท',esc(e.company||'-'))}
     ${row('แผนก',esc(e.department||'-'))}
     ${row('ตำแหน่ง',esc(e.position||'-'))}
     ${row('ผู้บังคับบัญชา',esc(e.supervisor||'-'))}
-    ${row('วันเริ่มงาน',fdate(e.startDate))}
-    <div class="detail-row"><span class="detail-label">อายุงาน</span><span class="detail-value" style="color:var(--pd);font-weight:700">${tenure(e.startDate,e.status==='resigned'?e.resignDate:null)}${e.status==='resigned'?' <span style="font-size:11px;font-weight:400;color:#94a3b8">(ถึงวันลาออก)</span>':''}</span></div>
+    <div class="detail-row"><span class="detail-label">วันเริ่มงาน</span><span class="detail-value">${fdate(e.startDate)} <span style="color:var(--pd);font-weight:700;font-size:12px">(${tenure(e.startDate,e.status==='resigned'?e.resignDate:null)}${e.status==='resigned'?' ถึงวันลาออก':''})</span></span></div>
+    ${row('สถานะปัจจุบัน',e.status==='active'?'พนักงานปัจจุบัน':'ลาออกแล้ว')}
+    ${e.status==='resigned'?row('วันที่ลาออก',fdate(e.resignDate)):''}
   </div>
 
   <div class="fsec">ข้อมูลการติดต่อ</div>
@@ -1279,6 +1284,11 @@ function renderForm(){
         <img id="photo-preview" src="${esc(e.photoUrl||'')}" style="width:84px;height:84px;border-radius:10px;object-fit:cover;background:#f1f5f9;border:1px solid var(--bdr);display:${e.photoUrl?'block':'none'}">
         <input type="file" id="photo-file" accept="image/*" onchange="previewEmpPhoto(event)">
       </div></div>
+    <div class="fg"><label class="lb">คำนำหน้าชื่อ</label>
+      <select name="namePrefix">
+        <option value="">-- ไม่ระบุ --</option>
+        ${['นาย','นาง','นางสาว'].map(p=>`<option value="${p}"${e.namePrefix===p?' selected':''}>${p}</option>`).join('')}
+      </select></div>
     <div class="fg"><label class="lb">ชื่อ-นามสกุล <span class="req">*</span></label>
       <input type="text" name="fullName" value="${esc(e.fullName||'')}" required placeholder="ชื่อ-นามสกุล"></div>
     <div class="fg"><label class="lb">ชื่อเล่น</label>
@@ -1290,7 +1300,7 @@ function renderForm(){
     <div class="fg"><label class="lb">เพศ</label>
       <select name="gender" onchange="toggleMilitary(this.value)">
         <option value="">-- ไม่ระบุ --</option>
-        ${['ชาย','หญิง','อื่นๆ'].map(g=>`<option value="${g}"${e.gender===g?' selected':''}>${g}</option>`).join('')}
+        ${['ชาย','หญิง'].map(g=>`<option value="${g}"${e.gender===g?' selected':''}>${g}</option>`).join('')}
       </select></div>
     <div class="fg"><label class="lb">วันเกิด</label>
       <input type="date" name="birthDate" value="${esc(toInputDate(e.birthDate))}"></div>
@@ -1330,8 +1340,8 @@ function renderForm(){
       </select></div>
     <div class="fg"><label class="lb">เป็นผู้พิการหรือไม่</label>
       <select name="disability">
-        <option value="ไม่มี" ${(!e.disability||e.disability==='ไม่มี')?'selected':''}>ไม่มี</option>
-        <option value="มี" ${e.disability==='มี'?'selected':''}>มี</option>
+        <option value="ไม่ใช่" ${(!e.disability||e.disability==='ไม่ใช่')?'selected':''}>ไม่ใช่</option>
+        <option value="ใช่" ${e.disability==='ใช่'?'selected':''}>ใช่</option>
       </select></div>
     <div class="fg"><label class="lb">โรงพยาบาลประกันสังคม</label>
       <input type="text" name="hospital" value="${esc(e.hospital||'')}" placeholder="ชื่อโรงพยาบาล"></div>
@@ -2102,6 +2112,7 @@ async function submitForm(ev){
   const emp={
     id:isEdit?S.editId:uid(),
     empId:fd.get('empId').trim(),
+    namePrefix:fd.get('namePrefix')||'',
     fullName:fd.get('fullName').trim(),
     nickname:fd.get('nickname').trim(),
     company:fd.get('company').trim(),
@@ -2130,7 +2141,7 @@ async function submitForm(ev){
     taxId:fd.get('taxId').trim(),
     photoUrl:isEdit?(prevEmp?.photoUrl||''):'',
     militaryStatus:fd.get('militaryStatus')||'',
-    disability:fd.get('disability')||'ไม่มี',
+    disability:fd.get('disability')||'ไม่ใช่',
     chronicDisease:fd.get('chronicDisease').trim(),
     hospital:fd.get('hospital').trim(),
     sickLeaveNoDoc:parseInt(fd.get('sickLeaveNoDoc'))||0,
