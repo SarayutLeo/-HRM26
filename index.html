@@ -1175,6 +1175,7 @@ function renderEmpDetail(id){
   if(!e)return`<div class="ph"><div><h2>ไม่พบข้อมูล</h2></div><button class="btn btn-g" onclick="goPage('list')">← กลับ</button></div>`;
   const grey=e.status==='resigned';
   const totalSalary=(parseFloat(e.baseSalary)||0)+(parseFloat(e.positionAllowance)||0)+(parseFloat(e.housingAllowance)||0)+(parseFloat(e.phoneAllowance)||0)+(parseFloat(e.professionalAllowance)||0)+(parseFloat(e.languageAllowance)||0)+(parseFloat(e.carAllowance)||0)+(parseFloat(e.travelAllowance)||0)+(parseFloat(e.otherBenefits)||0);
+  const totalDeduct=(parseFloat(e.socialSecurity)||0)+(parseFloat(e.taxDeduction)||0)+(parseFloat(e.studentLoan)||0);
   function row(label,value){return`<div class="detail-row"><span class="detail-label">${label}</span><span class="detail-value">${value||'-'}</span></div>`;}
   return`
 <div class="ph">
@@ -1262,6 +1263,15 @@ function renderEmpDetail(id){
     ${row('ค่าสวัสดิการอื่น',e.otherBenefits?Number(e.otherBenefits).toLocaleString('th-TH')+' บาท':'-')}
     <div class="detail-row"><span class="detail-label">รายได้รวม/เดือน</span><span class="detail-value" style="font-size:16px;font-weight:700;color:var(--pd)">${totalSalary>0?totalSalary.toLocaleString('th-TH')+' บาท':'-'}</span></div>
     <div class="detail-row fg full"><span class="detail-label">หมายเหตุ</span><span class="detail-value" style="white-space:pre-line">${esc(e.salaryNote||'-')}</span></div>
+  </div>
+
+  <div class="fsec">ส่วนหักรายได้</div>
+  <div class="fg3">
+    ${row('ค่าประกันสังคม',e.socialSecurity?Number(e.socialSecurity).toLocaleString('th-TH')+' บาท':'-')}
+    ${row('ค่าภาษี',e.taxDeduction?Number(e.taxDeduction).toLocaleString('th-TH')+' บาท':'-')}
+    ${row('ค่ากยศ',e.studentLoan?Number(e.studentLoan).toLocaleString('th-TH')+' บาท':'-')}
+    <div class="detail-row"><span class="detail-label">รวมรายการหัก</span><span class="detail-value" style="font-size:16px;font-weight:700;color:#9f1239">${totalDeduct>0?totalDeduct.toLocaleString('th-TH')+' บาท':'-'}</span></div>
+    <div class="detail-row"><span class="detail-label">รายได้สุทธิโดยประมาณ</span><span class="detail-value" style="font-size:16px;font-weight:700;color:#166534">${(totalSalary||totalDeduct)?(totalSalary-totalDeduct).toLocaleString('th-TH')+' บาท':'-'}</span></div>
   </div>`:''}
 </div>
 ${renderEmpPositionHistory(e.id)}
@@ -1442,6 +1452,20 @@ function renderForm(){
       <input type="text" id="sal-total" value="${(()=>{const t=(parseFloat(e.baseSalary)||0)+(parseFloat(e.positionAllowance)||0)+(parseFloat(e.housingAllowance)||0)+(parseFloat(e.phoneAllowance)||0)+(parseFloat(e.professionalAllowance)||0)+(parseFloat(e.languageAllowance)||0)+(parseFloat(e.carAllowance)||0)+(parseFloat(e.travelAllowance)||0)+(parseFloat(e.otherBenefits)||0);return t>0?t.toLocaleString('th-TH'):'';})()}" placeholder="คำนวณอัตโนมัติ" readonly style="background:#f0f9ff;color:var(--pd);font-weight:700;cursor:default"></div>
     <div class="fg full"><label class="lb">หมายเหตุ</label>
       <textarea name="salaryNote" placeholder="หมายเหตุเกี่ยวกับเงินเดือน/ค่าตอบแทน (ถ้ามี)">${esc(e.salaryNote||'')}</textarea></div>
+  </div>
+
+  <div class="fsec">ส่วนหักรายได้</div>
+  <div class="fg3">
+    <div class="fg"><label class="lb">ค่าประกันสังคม (บาท)</label>
+      <input type="number" name="socialSecurity" id="ded-ssn" value="${e.socialSecurity||''}" min="0" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label class="lb">ค่าภาษี (บาท)</label>
+      <input type="number" name="taxDeduction" id="ded-tax" value="${e.taxDeduction||''}" min="0" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label class="lb">ค่ากยศ (บาท)</label>
+      <input type="number" name="studentLoan" id="ded-gsl" value="${e.studentLoan||''}" min="0" placeholder="0" oninput="calcTotal()"></div>
+    <div class="fg"><label class="lb">รวมรายการหัก (บาท)</label>
+      <input type="text" id="ded-total" value="${(()=>{const t=(parseFloat(e.socialSecurity)||0)+(parseFloat(e.taxDeduction)||0)+(parseFloat(e.studentLoan)||0);return t>0?t.toLocaleString('th-TH'):'';})()}" placeholder="คำนวณอัตโนมัติ" readonly style="background:#fff1f2;color:#9f1239;font-weight:700;cursor:default"></div>
+    <div class="fg"><label class="lb">รายได้สุทธิโดยประมาณ (บาท)</label>
+      <input type="text" id="sal-net" value="${(()=>{const inc=(parseFloat(e.baseSalary)||0)+(parseFloat(e.positionAllowance)||0)+(parseFloat(e.housingAllowance)||0)+(parseFloat(e.phoneAllowance)||0)+(parseFloat(e.professionalAllowance)||0)+(parseFloat(e.languageAllowance)||0)+(parseFloat(e.carAllowance)||0)+(parseFloat(e.travelAllowance)||0)+(parseFloat(e.otherBenefits)||0);const ded=(parseFloat(e.socialSecurity)||0)+(parseFloat(e.taxDeduction)||0)+(parseFloat(e.studentLoan)||0);const n=inc-ded;return(inc||ded)?n.toLocaleString('th-TH'):'';})()}" placeholder="คำนวณอัตโนมัติ" readonly style="background:#f0fdf4;color:#166534;font-weight:700;cursor:default"></div>
   </div>
 
   ${isEdit?`<div class="form-foot" style="justify-content:space-between">
@@ -2179,6 +2203,9 @@ async function submitForm(ev){
     travelAllowance:parseFloat(fd.get('travelAllowance'))||0,
     otherBenefits:parseFloat(fd.get('otherBenefits'))||0,
     salaryNote:fd.get('salaryNote').trim(),
+    socialSecurity:parseFloat(fd.get('socialSecurity'))||0,
+    taxDeduction:parseFloat(fd.get('taxDeduction'))||0,
+    studentLoan:parseFloat(fd.get('studentLoan'))||0,
     status:fd.get('status'),
     resignDate:fd.get('resignDate')||'',
     createdAt:isEdit?(prevEmp?.createdAt||new Date().toISOString()):new Date().toISOString(),
@@ -2228,10 +2255,16 @@ async function submitDeptForm(ev){
   S.deptEditId=null;S.page='depts';render();
 }
 function calcTotal(){
-  const ids=['sal-base','sal-pos','sal-housing','sal-phone','sal-prof','sal-lang','sal-car','sal-travel','sal-other'];
-  const sum=ids.reduce((s,id)=>s+(parseFloat(document.getElementById(id)?.value)||0),0);
+  const incIds=['sal-base','sal-pos','sal-housing','sal-phone','sal-prof','sal-lang','sal-car','sal-travel','sal-other'];
+  const dedIds=['ded-ssn','ded-tax','ded-gsl'];
+  const inc=incIds.reduce((s,id)=>s+(parseFloat(document.getElementById(id)?.value)||0),0);
+  const ded=dedIds.reduce((s,id)=>s+(parseFloat(document.getElementById(id)?.value)||0),0);
   const t=document.getElementById('sal-total');
-  if(t)t.value=sum>0?sum.toLocaleString('th-TH'):'';
+  if(t)t.value=inc>0?inc.toLocaleString('th-TH'):'';
+  const dt=document.getElementById('ded-total');
+  if(dt)dt.value=ded>0?ded.toLocaleString('th-TH'):'';
+  const nt=document.getElementById('sal-net');
+  if(nt)nt.value=(inc||ded)?(inc-ded).toLocaleString('th-TH'):'';
 }
 function onFormCompanyChange(company){
   const deptSel=document.getElementById('dept-sel');
