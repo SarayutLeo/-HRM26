@@ -224,7 +224,7 @@ textarea{resize:vertical;min-height:72px}
 const MTH=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const COMPANIES=['บริษัท เคมเทค อินโนเวชั่น จำกัด','บริษัท เคมเทค อินเตอร์โลจิสติกส์ จำกัด'];
 // ── App Config — URL ฝังตรงนี้ ใช้ได้ทุกเครื่อง ─────────────────
-const APP_CONFIG={apiUrl:'https://script.google.com/macros/s/AKfycbwL9ZI5pZ9Xq8nxo_3BN7WHbwOA3oByxyos5mAXSn2PE2euVbYLO552k_6ZKTfoYtAs/exec'};
+const APP_CONFIG={apiUrl:'https://script.google.com/macros/s/AKfycbwzz_cuilXQXhaWO7YgwsMHc1FkcOjp6mEvuU17LPAj6H_MYduBwbhRC4CK-C2vS1XBHQ/exec'};
 
 // ── State ──────────────────────────────────────────────────────
 const S={
@@ -1205,6 +1205,7 @@ function renderEmpDetail(id){
 
   <div class="fsec">ข้อมูลส่วนตัว</div>
   <div class="fg2">
+    ${e.photoUrl?`<div class="detail-row fg full"><span class="detail-label">รูปพนักงาน</span><span class="detail-value"><img src="${esc(e.photoUrl)}" style="width:96px;height:96px;border-radius:10px;object-fit:cover;border:1px solid var(--bdr);display:block;margin-top:4px"></span></div>`:''}
     <div class="detail-row"><span class="detail-label">วันเกิด / อายุ</span><span class="detail-value">${e.birthDate?fdate(e.birthDate)+' <span style="color:#64748b;font-size:13px">('+calcAge(e.birthDate)+')</span>':'-'}</span></div>
     ${row('เพศ',esc(e.gender||'-'))}
     ${row('กรุ๊ปเลือด',esc(e.bloodType||'-'))}
@@ -1213,6 +1214,18 @@ function renderEmpDetail(id){
     ${row('วุฒิการศึกษา',esc(e.education||'-'))}
     ${row('ผู้อ้างอิง',esc(e.reference||'-'))}
     ${row('เบอร์ติดต่อฉุกเฉิน',esc(e.emergencyContact||'-'))}
+    ${row('ชื่อ-นามสกุล (อังกฤษ)',esc(e.fullNameEn||'-'))}
+    ${row('สถานะการสมรส',esc(e.maritalStatus||'-'))}
+    ${row('สัญชาติ',esc(e.nationality||'-'))}
+    ${row('เชื้อชาติ',esc(e.ethnicity||'-'))}
+    ${row('ศาสนา',esc(e.religion||'-'))}
+    ${row('เลขบัตรประชาชน/พาสปอร์ต/ใบขับขี่',esc(e.idCardNo||'-'))}
+    ${row('ส่วนสูง / น้ำหนัก',(e.height||e.weight)?esc((e.height||'-')+' ซม. / '+(e.weight||'-')+' กก.'):'-')}
+    ${row('เลขผู้เสียภาษี',esc(e.taxId||'-'))}
+    ${e.gender==='ชาย'?row('สถานะทางทหาร',esc(e.militaryStatus||'-')):''}
+    ${row('ผู้พิการ',esc(e.disability||'ไม่มี'))}
+    ${row('โรงพยาบาลประกันสังคม',esc(e.hospital||'-'))}
+    <div class="detail-row fg full"><span class="detail-label">โรคประจำตัว / ประวัติแพ้ยา-อาหาร</span><span class="detail-value" style="white-space:pre-line">${esc(e.chronicDisease||'-')}</span></div>
     <div class="detail-row fg full"><span class="detail-label">ที่อยู่</span><span class="detail-value" style="white-space:pre-line">${esc(e.address||'-')}</span></div>
   </div>
 
@@ -1290,7 +1303,7 @@ function renderForm(){
     <div class="fg"><label class="lb">วันที่เริ่มงาน <span class="req">*</span></label>
       <input type="date" name="startDate" value="${esc(toInputDate(e.startDate))}" required></div>
     <div class="fg"><label class="lb">เพศ</label>
-      <select name="gender">
+      <select name="gender" onchange="toggleMilitary(this.value)">
         <option value="">-- ไม่ระบุ --</option>
         ${['ชาย','หญิง','อื่นๆ'].map(g=>`<option value="${g}"${e.gender===g?' selected':''}>${g}</option>`).join('')}
       </select></div>
@@ -1307,6 +1320,53 @@ function renderForm(){
       <input type="text" name="education" value="${esc(e.education||'')}" placeholder="เช่น ปริญญาตรี วิศวกรรมศาสตร์ มหาวิทยาลัย..."></div>
     <div class="fg full"><label class="lb">ที่อยู่</label>
       <textarea name="address" placeholder="ที่อยู่ปัจจุบัน">${esc(e.address||'')}</textarea></div>
+  </div>
+
+  <div class="fsec">ข้อมูลส่วนตัวเพิ่มเติม</div>
+  <div class="fg2">
+    <div class="fg full"><label class="lb">รูปพนักงาน</label>
+      <div style="display:flex;align-items:center;gap:14px">
+        <img id="photo-preview" src="${esc(e.photoUrl||'')}" style="width:84px;height:84px;border-radius:10px;object-fit:cover;background:#f1f5f9;border:1px solid var(--bdr);display:${e.photoUrl?'block':'none'}">
+        <input type="file" id="photo-file" accept="image/*" onchange="previewEmpPhoto(event)">
+      </div></div>
+    <div class="fg"><label class="lb">ชื่อ-นามสกุล ภาษาอังกฤษ (ชื่อเล่น)</label>
+      <input type="text" name="fullNameEn" value="${esc(e.fullNameEn||'')}" placeholder="เช่น John Smith (Jo)"></div>
+    <div class="fg"><label class="lb">สถานะการสมรส</label>
+      <select name="maritalStatus">
+        <option value="">-- ไม่ระบุ --</option>
+        ${['โสด','สมรส','หย่าร้าง','หม้าย'].map(m=>`<option value="${m}"${e.maritalStatus===m?' selected':''}>${m}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label class="lb">สัญชาติ</label>
+      <input type="text" name="nationality" value="${esc(e.nationality??'ไทย')}" placeholder="เช่น ไทย"></div>
+    <div class="fg"><label class="lb">เชื้อชาติ</label>
+      <input type="text" name="ethnicity" value="${esc(e.ethnicity??'ไทย')}" placeholder="เช่น ไทย"></div>
+    <div class="fg"><label class="lb">ศาสนา</label>
+      <select name="religion">
+        <option value="">-- ไม่ระบุ --</option>
+        ${['พุทธ','คริสต์','อิสลาม','อื่นๆ'].map(r=>`<option value="${r}"${e.religion===r?' selected':''}>${r}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label class="lb">เลขบัตรประชาชน/พาสปอร์ต/ใบขับขี่</label>
+      <input type="text" name="idCardNo" value="${esc(e.idCardNo||'')}" placeholder="เลขบัตรประจำตัว"></div>
+    <div class="fg"><label class="lb">ส่วนสูง (ซม.)</label>
+      <input type="number" name="height" value="${esc(e.height||'')}" min="0" placeholder="ซม."></div>
+    <div class="fg"><label class="lb">น้ำหนัก (กก.)</label>
+      <input type="number" name="weight" value="${esc(e.weight||'')}" min="0" placeholder="กก."></div>
+    <div class="fg"><label class="lb">เลขผู้เสียภาษี <span style="font-size:11px;color:#94a3b8;font-weight:400">(กรณีไม่ใช่สัญชาติไทย)</span></label>
+      <input type="text" name="taxId" value="${esc(e.taxId||'')}" placeholder="Tax ID"></div>
+    <div class="fg" id="military-wrap" style="display:${e.gender==='หญิง'?'none':'flex'}"><label class="lb">สถานะทางทหาร <span style="font-size:11px;color:#94a3b8;font-weight:400">(เพศชาย)</span></label>
+      <select name="militaryStatus">
+        <option value="">-- ไม่ระบุ --</option>
+        ${['ผ่านการเกณฑ์ทหารแล้ว','ได้รับการยกเว้น','ยังไม่ผ่านการเกณฑ์'].map(m=>`<option value="${m}"${e.militaryStatus===m?' selected':''}>${m}</option>`).join('')}
+      </select></div>
+    <div class="fg"><label class="lb">เป็นผู้พิการหรือไม่</label>
+      <select name="disability">
+        <option value="ไม่มี" ${(!e.disability||e.disability==='ไม่มี')?'selected':''}>ไม่มี</option>
+        <option value="มี" ${e.disability==='มี'?'selected':''}>มี</option>
+      </select></div>
+    <div class="fg"><label class="lb">โรงพยาบาลประกันสังคม</label>
+      <input type="text" name="hospital" value="${esc(e.hospital||'')}" placeholder="ชื่อโรงพยาบาล"></div>
+    <div class="fg full"><label class="lb">โรคประจำตัว / ประวัติแพ้ยา-อาหาร</label>
+      <textarea name="chronicDisease" placeholder="ระบุโรคประจำตัว, ประวัติแพ้ยา หรือแพ้อาหาร (ถ้ามี)">${esc(e.chronicDisease||'')}</textarea></div>
   </div>
 
   <div class="fsec">สิทธิการลา (จำนวนวัน/ปี)</div>
@@ -1980,6 +2040,26 @@ function toggleRD(v){
   if(wrap)wrap.style.display=v==='resigned'?'flex':'none';
   if(inp){inp.required=v==='resigned';if(v!=='resigned')inp.value=''}
 }
+function toggleMilitary(v){
+  const wrap=document.getElementById('military-wrap');
+  if(wrap)wrap.style.display=v==='หญิง'?'none':'flex';
+}
+function previewEmpPhoto(ev){
+  const file=ev.target.files&&ev.target.files[0];
+  const img=document.getElementById('photo-preview');
+  if(!file||!img)return;
+  const reader=new FileReader();
+  reader.onload=()=>{img.src=String(reader.result);img.style.display='block'};
+  reader.readAsDataURL(file);
+}
+function readFileAsBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
 function viewEmp(id){S.viewId=id;S.page='detail';render();window.scrollTo(0,0)}
 function editEmp(id){S.editId=id;S.page='form';render();window.scrollTo(0,0)}
 function confirmDel(id){S.delId=id;render()}
@@ -2002,6 +2082,15 @@ async function submitForm(ev){
     document.getElementById('rd-inp')?.focus();return;
   }
   const isEdit=!!S.editId;
+  const prevEmp=isEdit?S.emps.find(e=>e.id===S.editId):null;
+  let photoData='',photoName='',photoType='';
+  const photoFile=document.getElementById('photo-file');
+  const chosenFile=photoFile&&photoFile.files&&photoFile.files[0];
+  if(chosenFile){
+    photoData=await readFileAsBase64(chosenFile);
+    photoName=chosenFile.name;
+    photoType=chosenFile.type||'image/jpeg';
+  }
   const emp={
     id:isEdit?S.editId:uid(),
     empId:fd.get('empId').trim(),
@@ -2021,6 +2110,20 @@ async function submitForm(ev){
     bloodType:fd.get('bloodType')||'',
     reference:fd.get('reference').trim(),
     emergencyContact:fd.get('emergencyContact').trim(),
+    fullNameEn:fd.get('fullNameEn').trim(),
+    maritalStatus:fd.get('maritalStatus')||'',
+    nationality:fd.get('nationality').trim(),
+    ethnicity:fd.get('ethnicity').trim(),
+    religion:fd.get('religion')||'',
+    idCardNo:fd.get('idCardNo').trim(),
+    height:fd.get('height')||'',
+    weight:fd.get('weight')||'',
+    taxId:fd.get('taxId').trim(),
+    photoUrl:isEdit?(prevEmp?.photoUrl||''):'',
+    militaryStatus:fd.get('militaryStatus')||'',
+    disability:fd.get('disability')||'ไม่มี',
+    chronicDisease:fd.get('chronicDisease').trim(),
+    hospital:fd.get('hospital').trim(),
     sickLeaveNoDoc:parseInt(fd.get('sickLeaveNoDoc'))||0,
     sickLeaveWithDoc:parseInt(fd.get('sickLeaveWithDoc'))||0,
     personalLeave:parseInt(fd.get('personalLeave'))||0,
@@ -2030,13 +2133,13 @@ async function submitForm(ev){
     otherBenefits:parseFloat(fd.get('otherBenefits'))||0,
     status:fd.get('status'),
     resignDate:fd.get('resignDate')||'',
-    createdAt:isEdit?(S.emps.find(e=>e.id===S.editId)?.createdAt||new Date().toISOString()):new Date().toISOString(),
+    createdAt:isEdit?(prevEmp?.createdAt||new Date().toISOString()):new Date().toISOString(),
     updatedAt:new Date().toISOString(),
   };
   if(isEdit){const i=S.emps.findIndex(e=>e.id===S.editId);if(i>-1)S.emps[i]=emp}
   else S.emps.unshift(emp);
   lsave();
-  const ok=await apiPost({action:isEdit?'update':'create',data:emp});
+  const ok=await apiPost({action:isEdit?'update':'create',data:{...emp,photoData,photoName,photoType}});
   toast(isEdit?'แก้ไขข้อมูลสำเร็จ':'เพิ่มพนักงานสำเร็จ','ok');
   if(isEdit){const eid=S.editId;S.editId=null;S.viewId=eid;S.page='detail';}
   else{S.editId=null;S.page='list';}

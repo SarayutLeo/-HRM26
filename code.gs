@@ -14,6 +14,8 @@ const EMP_HEADERS = [
   'id', 'empId', 'fullName', 'nickname', 'company', 'department', 'position',
   'startDate', 'birthDate', 'gender', 'bloodType', 'address', 'phone', 'education', 'email', 'supervisor',
   'reference', 'emergencyContact',
+  'fullNameEn', 'maritalStatus', 'nationality', 'ethnicity', 'religion', 'idCardNo',
+  'height', 'weight', 'taxId', 'photoUrl', 'militaryStatus', 'disability', 'chronicDisease', 'hospital',
   'sickLeaveNoDoc', 'sickLeaveWithDoc', 'personalLeave', 'annualLeave',
   'salaryStartDate', 'baseSalary', 'positionAllowance', 'otherBenefits', 'housingAllowance',
   'status', 'resignDate', 'createdAt', 'updatedAt'
@@ -22,6 +24,8 @@ const EMP_LABELS = [
   'ID (ระบบ)', 'รหัสพนักงาน', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'บริษัท', 'แผนก', 'ตำแหน่ง',
   'วันที่เริ่มงาน', 'วันเกิด', 'เพศ', 'กรุ๊ปเลือด', 'ที่อยู่', 'เบอร์ติดต่อ', 'วุฒิการศึกษา', 'อีเมล', 'ผู้บังคับบัญชา',
   'ผู้อ้างอิง', 'เบอร์ติดต่อฉุกเฉิน',
+  'ชื่อ-นามสกุล (อังกฤษ)', 'สถานะการสมรส', 'สัญชาติ', 'เชื้อชาติ', 'ศาสนา', 'เลขบัตรประชาชน/พาสปอร์ต/ใบขับขี่',
+  'ส่วนสูง (ซม.)', 'น้ำหนัก (กก.)', 'เลขผู้เสียภาษี (กรณีไม่ใช่สัญชาติไทย)', 'รูปพนักงาน (URL)', 'สถานะทางทหาร', 'ผู้พิการ', 'โรคประจำตัว/แพ้ยา-อาหาร', 'โรงพยาบาลประกันสังคม',
   'ลาป่วย(ไม่มีใบ)', 'ลาป่วย(มีใบ)', 'ลากิจ', 'ลาพักร้อน',
   'วันที่เริ่ม(เงินเดือน)', 'เงินเดือนฐาน', 'ค่าตำแหน่ง', 'สวัสดิการอื่น', 'ค่าที่พัก',
   'สถานะ', 'วันที่ลาออก', 'วันที่สร้าง', 'วันที่แก้ไข'
@@ -129,7 +133,7 @@ function ensureColumns(sheet, labels) {
 }
 
 function getEmpSheet()  {
-  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,90,140,120,130,110,100,80,90,200,130,150,160,150,140,140,100,100,80,90,110,110,110,120,110,160,160]);
+  const s = initSheet(SHEET_EMP,  EMP_LABELS,  [140,110,160,90,140,120,130,110,100,80,90,200,130,150,160,150,140,140,160,110,100,100,100,150,80,80,140,200,140,110,220,180,100,100,80,90,110,110,110,120,110,160,160]);
   ensureColumns(s, EMP_LABELS);
   return s;
 }
@@ -193,6 +197,21 @@ function saveLeaveAttachment(base64Data, fileName, mimeType) {
   const bytes = Utilities.base64Decode(base64Data);
   const blob = Utilities.newBlob(bytes, mimeType || 'image/jpeg', fileName || ('leave_doc_' + Date.now()));
   const file = getLeaveDocsFolder().createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return file.getUrl();
+}
+
+// ── Employee photo (Google Drive) ───────────────────────────────
+function getEmployeePhotosFolder() {
+  const folders = DriveApp.getFoldersByName('HRM_EmployeePhotos');
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder('HRM_EmployeePhotos');
+}
+function saveEmployeePhoto(base64Data, fileName, mimeType) {
+  if (!base64Data) return '';
+  const bytes = Utilities.base64Decode(base64Data);
+  const blob = Utilities.newBlob(bytes, mimeType || 'image/jpeg', fileName || ('emp_photo_' + Date.now()));
+  const file = getEmployeePhotosFolder().createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   return file.getUrl();
 }
@@ -298,10 +317,13 @@ function doPost(e) {
 
     // ── Employee ──
     if (action === 'create') {
+      if (data.photoData) {
+        data.photoUrl = saveEmployeePhoto(data.photoData, data.photoName, data.photoType);
+      }
       const sheet = getEmpSheet();
       sheet.appendRow(objToRow(EMP_HEADERS, data));
       const newRow = sheet.getLastRow();
-      fixTextFields(sheet, newRow, data, ['phone', 'emergencyContact']);
+      fixTextFields(sheet, newRow, data, ['phone', 'emergencyContact', 'idCardNo', 'taxId']);
       colorStatus(sheet, newRow, EMP_HEADERS.indexOf('status') + 1, data.status);
       return jsonResp({ success: true });
     }
@@ -309,8 +331,14 @@ function doPost(e) {
       const sheet = getEmpSheet();
       const row = findRowById(sheet, data.id);
       if (row < 0) return jsonResp({ success: false, error: 'Employee not found' });
+      if (data.photoData) {
+        data.photoUrl = saveEmployeePhoto(data.photoData, data.photoName, data.photoType);
+      } else if (!data.photoUrl) {
+        const existing = rowToObj(EMP_HEADERS, sheet.getRange(row, 1, 1, EMP_HEADERS.length).getValues()[0]);
+        data.photoUrl = existing.photoUrl || '';
+      }
       sheet.getRange(row, 1, 1, EMP_HEADERS.length).setValues([objToRow(EMP_HEADERS, data)]);
-      fixTextFields(sheet, row, data, ['phone', 'emergencyContact']);
+      fixTextFields(sheet, row, data, ['phone', 'emergencyContact', 'idCardNo', 'taxId']);
       colorStatus(sheet, row, EMP_HEADERS.indexOf('status') + 1, data.status);
       return jsonResp({ success: true });
     }
@@ -600,7 +628,7 @@ function fixTextFields(sheet, row, data, fields) {
 function fixPhoneColumnFormat() {
   const sheet = getEmpSheet();
   const rows = Math.max(sheet.getMaxRows(), 1000);
-  ['phone', 'emergencyContact'].forEach(function(f) {
+  ['phone', 'emergencyContact', 'idCardNo', 'taxId'].forEach(function(f) {
     const col = EMP_HEADERS.indexOf(f) + 1;
     if (col > 0) sheet.getRange(1, col, rows, 1).setNumberFormat('@');
   });
